@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        :root {
+            --light-blue: #60A5FA;
+            --medium-blue: #3B82F6;
+            --dark-blue: #1E3A8A;
+            --background: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --border: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--light-blue), var(--medium-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .category-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--light-blue), var(--medium-blue));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .category-card:hover {
+            border-color: var(--medium-blue);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .category-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .category-card:focus {
+            outline: 3px solid var(--light-blue);
+            outline-offset: 2px;
+        }
+
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .category-count {
+            color: var(--light-blue);
+            font-size: 0.95rem;
+        }
+
+        .channels-view {
+            display: none;
+            padding: 20px;
+        }
+
+        .channels-view.active {
+            display: block;
+        }
+
+        .back-button {
+            background: linear-gradient(135deg, var(--medium-blue), var(--dark-blue));
+            color: var(--text-primary);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .back-button:hover {
+            background: linear-gradient(135deg, var(--light-blue), var(--medium-blue));
+            transform: translateX(-5px);
+            box-shadow: 0 5px 15px rgba(96, 165, 250, 0.4);
+        }
+
+        .back-button:focus {
+            outline: 3px solid var(--light-blue);
+            outline-offset: 2px;
+        }
+
+        .channels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            max-width: 1400px;
+        }
+
+        .channel-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .channel-card:hover {
+            border-color: var(--light-blue);
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.1));
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(96, 165, 250, 0.3);
+        }
+
+        .channel-card:focus {
+            outline: 3px solid var(--light-blue);
+            outline-offset: 2px;
+        }
+
+        .channel-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .player-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: var(--background);
+            z-index: 1000;
+        }
+
+        .player-view.active {
+            display: block;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .overlay-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 40px 20px;
+        }
+
+        .overlay-menu.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .overlay-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .overlay-header h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--light-blue), var(--medium-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .overlay-current {
+            color: var(--light-blue);
+            font-size: 1.1rem;
+        }
+
+        .overlay-channels {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .overlay-channel {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .overlay-channel:hover {
+            border-color: var(--light-blue);
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(59, 130, 246, 0.15));
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4);
+        }
+
+        .overlay-channel.playing {
+            border-color: var(--medium-blue);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(30, 58, 138, 0.2));
+        }
+
+        .overlay-channel:focus {
+            outline: 3px solid var(--light-blue);
+            outline-offset: 2px;
+        }
+
+        .controls-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(59, 130, 246, 0.9);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 2001;
+            animation: slideUp 0.5s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--light-blue);
+            font-size: 1.2rem;
+            z-index: 3000;
+        }
+
+        .spinner {
+            border: 4px solid rgba(96, 165, 250, 0.2);
+            border-top: 4px solid var(--light-blue);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .categories-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .channels-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .overlay-channels {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .channels-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .overlay-channels {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="categoriesView">
+        <div class="header">
+            <h1>📺 IPTV Player</h1>
+            <p>Select a category to browse channels</p>
+        </div>
+        <div class="categories-grid">
+            <div class="category-card" tabindex="0" data-category="live">
+                <div class="category-icon">🔴</div>
+                <div class="category-title">Live TV</div>
+                <div class="category-count">7 channels</div>
+            </div>
+            <div class="category-card" tabindex="0" data-category="sports">
+                <div class="category-icon">⚽</div>
+                <div class="category-title">Sports</div>
+                <div class="category-count">Coming soon</div>
+            </div>
+            <div class="category-card" tabindex="0" data-category="movies">
+                <div class="category-icon">🎬</div>
+                <div class="category-title">Movies</div>
+                <div class="category-count">Coming soon</div>
+            </div>
+            <div class="category-card" tabindex="0" data-category="news">
+                <div class="category-icon">📰</div>
+                <div class="category-title">News</div>
+                <div class="category-count">Coming soon</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="channels-view" id="channelsView">
+        <button class="back-button" id="backToCategories">← Back to Categories</button>
+        <div class="channels-grid" id="channelsGrid"></div>
+    </div>
+
+    <div class="player-view" id="playerView">
+        <video id="videoPlayer" controls></video>
+    </div>
+
+    <div class="overlay-menu" id="overlayMenu">
+        <div class="overlay-header">
+            <h2>Select Channel</h2>
+            <p class="overlay-current">Currently playing: <span id="currentChannel">None</span></p>
+        </div>
+        <div class="overlay-channels" id="overlayChannels"></div>
+        <div class="controls-hint">Press ESC to close | ENTER/SPACE to toggle menu</div>
+    </div>
+
+    <div class="loading" id="loading" style="display: none;">
+        <div class="spinner"></div>
+        <div>Loading channel...</div>
+    </div>
+
+    <script>
+        const channels = {
+            live: [
+                { name: "RTK 1", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/98r-d35-487-v6m/tracks-v4a1/mono.ts.m3u8" },
+                { name: "RTK 3", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/rtk3/tracks-v4a1/mono.ts.m3u8" },
+                { name: "T7", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream-specific/1z8-byc-4ee-lc9/tracks-v2a1/mono.m3u8" },
+                { name: "RTV21 HD", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-live/2cz-npl-jfn-9he/tracks-v2a1/mono.m3u8" },
+                { name: "KTV HD", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/lj9-pxm-o53-rp0/tracks-v4a1/mono.m3u8" },
+                { name: "Test 1", url: "#" },
+                { name: "Test 2", url: "#" }
+            ]
+        };
+
+        let currentCategory = null;
+        let currentChannelIndex = -1;
+        let hls = null;
+
+        const categoriesView = document.getElementById('categoriesView');
+        const channelsView = document.getElementById('channelsView');
+        const playerView = document.getElementById('playerView');
+        const overlayMenu = document.getElementById('overlayMenu');
+        const channelsGrid = document.getElementById('channelsGrid');
+        const overlayChannels = document.getElementById('overlayChannels');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const loading = document.getElementById('loading');
+        const currentChannelSpan = document.getElementById('currentChannel');
+
+        // Category selection
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('click', () => selectCategory(card.dataset.category));
+            card.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectCategory(card.dataset.category);
+                }
+            });
+        });
+
+        function selectCategory(category) {
+            if (!channels[category]) {
+                alert('This category is coming soon!');
+                return;
+            }
+            currentCategory = category;
+            showChannels();
+        }
+
+        function showChannels() {
+            categoriesView.style.display = 'none';
+            channelsView.classList.add('active');
+            
+            channelsGrid.innerHTML = '';
+            channels[currentCategory].forEach((channel, index) => {
+                const card = document.createElement('div');
+                card.className = 'channel-card';
+                card.tabIndex = 0;
+                card.innerHTML = `<div class="channel-name">${channel.name}</div>`;
+                card.addEventListener('click', () => playChannel(index));
+                card.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        playChannel(index);
+                    }
+                });
+                channelsGrid.appendChild(card);
+            });
+        }
+
+        function playChannel(index) {
+            const channel = channels[currentCategory][index];
+            if (channel.url === '#') {
+                alert('Test channel - no stream available');
+                return;
+            }
+
+            currentChannelIndex = index;
+            currentChannelSpan.textContent = channel.name;
+            
+            channelsView.classList.remove('active');
+            playerView.classList.add('active');
+            
+            loadStream(channel.url);
+            updateOverlayChannels();
+        }
+
+        function loadStream(url) {
+            loading.style.display = 'block';
+            
+            if (hls) {
+                hls.destroy();
+            }
+
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                });
+                hls.loadSource(url);
+                hls.attachMedia(videoPlayer);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    videoPlayer.play();
+                    loading.style.display = 'none';
+                });
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('HLS error:', data);
+                    loading.style.display = 'none';
+                    if (data.fatal) {
+                        alert('Failed to load stream');
+                    }
+                });
+            } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                videoPlayer.src = url;
+                videoPlayer.addEventListener('loadedmetadata', () => {
+                    videoPlayer.play();
+                    loading.style.display = 'none';
+                });
+            } else {
+                alert('HLS not supported in this browser');
+                loading.style.display = 'none';
+            }
+        }
+
+        function updateOverlayChannels() {
+            overlayChannels.innerHTML = '';
+            channels[currentCategory].forEach((channel, index) => {
+                const card = document.createElement('div');
+                card.className = 'overlay-channel';
+                if (index === currentChannelIndex) {
+                    card.classList.add('playing');
+                }
+                card.tabIndex = 0;
+                card.innerHTML = `<div class="channel-name">${channel.name}</div>`;
+                card.addEventListener('click', () => {
+                    if (channel.url !== '#') {
+                        currentChannelIndex = index;
+                        currentChannelSpan.textContent = channel.name;
+                        loadStream(channel.url);
+                        updateOverlayChannels();
+                        overlayMenu.classList.remove('active');
+                    }
+                });
+                overlayChannels.appendChild(card);
+            });
+        }
+
+        // Back button
+        document.getElementById('backToCategories').addEventListener('click', () => {
+            channelsView.classList.remove('active');
+            categoriesView.style.display = 'block';
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (playerView.classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    if (overlayMenu.classList.contains('active')) {
+                        overlayMenu.classList.remove('active');
+                    } else {
+                        playerView.classList.remove('active');
+                        channelsView.classList.add('active');
+                        if (hls) {
+                            hls.destroy();
+                            hls = null;
+                        }
+                        videoPlayer.src = '';
+                    }
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    if (!videoPlayer.paused && !videoPlayer.ended) {
+                        e.preventDefault();
+                        overlayMenu.classList.toggle('active');
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    const nextIndex = (currentChannelIndex + 1) % channels[currentCategory].length;
+                    const nextChannel = channels[currentCategory][nextIndex];
+                    if (nextChannel.url !== '#') {
+                        currentChannelIndex = nextIndex;
+                        currentChannelSpan.textContent = nextChannel.name;
+                        loadStream(nextChannel.url);
+                        updateOverlayChannels();
+                    }
+                } else if (e.key === 'ArrowLeft') {
+                    const prevIndex = currentChannelIndex - 1 < 0 ? channels[currentCategory].length - 1 : currentChannelIndex - 1;
+                    const prevChannel = channels[currentCategory][prevIndex];
+                    if (prevChannel.url !== '#') {
+                        currentChannelIndex = prevIndex;
+                        currentChannelSpan.textContent = prevChannel.name;
+                        loadStream(prevChannel.url);
+                        updateOverlayChannels();
+                    }
+                }
+            } else if (channelsView.classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    channelsView.classList.remove('active');
+                    categoriesView.style.display = 'block';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
