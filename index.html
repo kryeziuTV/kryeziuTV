@@ -15,40 +15,54 @@
             font-family: 'Inter', sans-serif;
             background-color: #0d1117; /* Sfond i errët për ndjesi kinemaje */
             color: #e5e7eb;
-            overflow: hidden; /* Heq scroll-in e faqes kryesore */
+            overflow: hidden; 
             transition: background-color 0.3s;
         }
+
+        /* Klasa Bazë për të gjitha Elementet Interaktive */
+        .interactive-item {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, background-color 0.3s, border-color 0.3s;
+            cursor: pointer;
+            outline: none; 
+        }
         
-        /* Stilizim i Forcëzuar i Fokusit (Pop-up Effect) */
-        .interactive-item:focus {
-            background-color: #3b82f6 !important; 
-            color: white !important;
-            transform: scale(1.10); /* Zmadhim më i theksuar për TV */
-            box-shadow: 0 16px 40px rgba(59, 130, 246, 0.7); 
-            outline: none;
-            z-index: 10;
+        /* ---------------------------------------------------- */
+        /* EFEKTI I FOKUSIT (Fokus TV) */
+        /* ---------------------------------------------------- */
+        
+        /* 1. Efekti i fokusit për KARTAT e Kategorive (Gradient & Neon Glow) */
+        .category-card:focus {
+            transform: scale(1.15) perspective(1px); 
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%) !important;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.9), 0 0 5px rgba(59, 130, 246, 0.5); 
+            z-index: 100;
+            border-color: #3b82f6 !important;
         }
 
-        /* Klasa e re për të trajtuar fokusin e elementeve interaktive */
-        .category-card, .channel-item {
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, background-color 0.3s;
-            cursor: pointer;
+        /* 2. Efekti i fokusit për KANALET (Border Glow) - Përdoret si për listën e kanaleve ashtu edhe për OSD */
+        .channel-item:focus, .osd-channel-item:focus {
+            background-color: #1f2937 !important; 
+            transform: scale(1.05) perspective(1px); 
+            border: 2px solid #3b82f6; 
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); 
         }
 
         /* Stili i kanalit aktual që po luhet */
-        .channel-item.active {
+        .channel-item.active, .osd-channel-item.active {
             background-color: #2563eb; 
             color: white;
             box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
         }
 
-        /* Fsheh ekranin e kategorive kur jemi në ekranin e kanaleve */
-        .hidden-category-screen {
-            display: none !important;
+        /* Karta e Kategorisë (Pamja bazë) */
+        .category-card {
+            border: 1px solid #374151; 
+            background-color: #1f2937;
+            text-shadow: 1px 1px 2px #000;
         }
 
         /* Stilizimi i Video Player-it */
-        #video-player {
+        #fullscreen-video-player {
             width: 100%;
             height: 100%;
             position: fixed;
@@ -56,84 +70,85 @@
             left: 0;
         }
         
-        /* Stilizimi për listën e kanaleve */
-        #channel-list {
-            max-height: calc(100vh - 150px); /* Llogarit lartësinë e mbetur */
+        /* OSD Menu (Overlay) - Stili fillestar për t'u fshehur */
+        #osd-menu {
+            /* Fshehur jashtë ekranit */
+            transform: translateX(-100%); 
+        }
+        /* Klasa e aktivizimit për shfaqje */
+        #osd-menu.active {
+            /* Shfaqur brenda ekranit */
+            transform: translateX(0); 
+        }
+
+        /* Fsheh scrollbar-in */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <!-- Kontejneri Kryesor i Faqes (Përdoret për të fshehur/shfaqur faqet) -->
+    <!-- Kontejneri Kryesor i Faqes -->
     <div id="main-container" class="min-h-screen">
 
         <!-- Ekrani 1: Faqja Kryesore - Vetëm Kategoritë -->
         <div id="category-screen" class="flex flex-col items-center justify-center min-h-screen p-8">
-            <h1 class="text-5xl font-extrabold text-white mb-12">Zgjidhni Kategorinë</h1>
+            <h1 class="text-5xl font-extrabold text-white mb-16 tracking-wider">TV LIVE IPTV</h1>
             
-            <div id="category-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 w-full max-w-6xl">
+            <!-- Rreshti Horizontal i Kategorive -->
+            <div id="category-cards-container" class="flex flex-wrap justify-center gap-6 w-full max-w-7xl no-scrollbar overflow-x-auto">
                 <!-- Kartat e Kategorive do të gjenerohen këtu -->
             </div>
+            <p class="mt-12 text-gray-500 text-lg">Zgjidhni një kategori me OK.</p>
         </div>
 
-        <!-- Ekrani 2: Faqja e Kanaleve - Listë dhe Player (Fillimisht i Fshehur) -->
-        <div id="channels-screen" class="hidden min-h-screen flex flex-col">
+        <!-- Ekrani 2: Faqja e Kanaleve - Listë e Thjeshtë në Qendër -->
+        <div id="channels-screen" class="hidden min-h-screen flex flex-col items-center p-8">
             
-            <header class="p-4 bg-gray-900 shadow-xl border-b border-gray-700 flex justify-between items-center">
-                <button id="back-button" class="interactive-item px-4 py-2 bg-gray-700 text-white rounded-lg font-semibold" tabindex="0">
-                    < Back
+            <header class="w-full max-w-lg mb-8 flex justify-between items-center">
+                <button id="back-button" class="interactive-item px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold" tabindex="0">
+                    < KTHEHU
                 </button>
-                <h1 id="current-category-title" class="text-3xl font-extrabold text-white">Live TV</h1>
-                <div class="w-20"></div> <!-- Placeholder për qendërsim -->
+                <h1 id="current-category-title" class="text-3xl font-extrabold text-blue-400">Kategoria</h1>
+                <div class="w-24"></div> 
             </header>
 
-            <!-- Kontejneri kryesor Player dhe Lista -->
-            <div class="flex flex-col lg:flex-row flex-grow">
-                
-                <!-- Seksioni 2: Player (Zgjedhja e Kanalit) -->
-                <main class="lg:w-3/4 p-4 lg:p-6 flex flex-col space-y-4">
-                    
-                    <!-- Kontejneri i Video Player-it për t'u shfaqur si 'thumbnail' -->
-                    <div class="relative bg-black rounded-xl shadow-2xl overflow-hidden aspect-video">
-                        <video id="video-preview-player" playsinline class="rounded-xl w-full h-full"></video>
-                        <div id="preview-message" class="absolute inset-0 flex items-center justify-center text-white text-3xl font-bold bg-black/70">
-                            Zgjidhni një kanal për t'u luajtur
-                        </div>
-                    </div>
-
-                    <!-- Informacioni i Kanalit -->
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
-                        <p class="text-lg font-semibold text-blue-400">Tani i përzgjedhur:</p>
-                        <p id="current-channel-info" class="text-2xl font-bold text-white">Nuk ka kanal të përzgjedhur.</p>
-                    </div>
-                </main>
-
-                <!-- Seksioni 3: Lista e Kanaleve -->
-                <aside class="lg:w-1/4 bg-gray-900 p-4 lg:p-6 shadow-2xl flex flex-col rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl">
-                    
-                    <h2 class="text-2xl font-bold mb-3 text-white border-b border-gray-700 pb-2">Kanalet</h2>
-
-                    <div id="channel-list" class="flex-grow space-y-2 overflow-y-auto pr-1">
-                        <!-- Kanale do të gjenerohen këtu -->
-                    </div>
-
-                </aside>
+            <!-- Lista e Kanaleve Qendërzuar -->
+            <div id="channel-list-container" class="w-full max-w-lg space-y-3 overflow-y-auto max-h-[75vh] p-2">
+                <!-- Kanale do të gjenerohen këtu -->
             </div>
+            <p class="mt-8 text-gray-500 text-lg">Shtypni OK për të parë kanalin në Fullscreen.</p>
         </div>
         
     </div>
 
     <!-- Seksioni Fullscreen Video (I fshehur derisa të luhet kanali) -->
     <div id="fullscreen-player-container" class="fixed inset-0 bg-black z-50 hidden">
-        <!-- Vini re: Pa controls, me autoplay, muted=false, dhe playsinline -->
-        <video id="fullscreen-video-player" autoplay playsinline muted=false class="w-full h-full"></video>
+        <!-- Video Player - Pa controls, me zë të hapur -->
+        <video id="fullscreen-video-player" autoplay playsinline muted="false" class="w-full h-full"></video>
+
+        <!-- OSD Menu (Overlay) - Shfaqet me butonin OK -->
+        <div id="osd-menu" class="fixed top-0 left-0 h-full w-80 bg-gray-900/95 shadow-2xl transition-transform duration-300 p-4 pt-12 z-10">
+            <h3 class="text-2xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Kanalet e Kategorisë</h3>
+            <div id="osd-channel-list" class="space-y-2 overflow-y-auto h-[90%]">
+                <!-- Kanale do të gjenerohen në kohë reale këtu -->
+            </div>
+            <div id="osd-info" class="absolute bottom-0 left-0 w-full bg-gray-800 p-3 text-sm text-gray-400">
+                OK: Zgjidh | Back: Fsheh
+            </div>
+        </div>
     </div>
 
 <script>
-    // Konfigurimi i kanalit (URL-të e vërteta m3u8 duhet të vendosen këtu)
+    // Konfigurimi i kanalit (URL-të e vërteta m3u8)
     const channels = {
         'Live TV': [
-            { name: 'Demo TV 1', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+            { name: 'RTK 1', url: 'http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/98r-d35-487-v6m/tracks-v4a1/mono.ts.m3u8' },
             { name: 'Demo TV 2', url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8' },
             { name: 'Lajme Global', url: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' },
             { name: 'Komedie Klasike', url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8' }
@@ -166,49 +181,50 @@
 
     let hls = null;
     let currentCategory = ''; 
-    let currentVideoElement = null; // Mban referencën e lojtarit aktual
+    let currentChannel = { url: '', name: '' };
 
     const categoryScreen = document.getElementById('category-screen');
     const channelsScreen = document.getElementById('channels-screen');
     const categoryCardsContainer = document.getElementById('category-cards-container');
-    const channelListContainer = document.getElementById('channel-list');
+    const channelListContainer = document.getElementById('channel-list-container');
     const currentCategoryTitle = document.getElementById('current-category-title');
-    const currentChannelInfo = document.getElementById('current-channel-info');
     const backButton = document.getElementById('back-button');
     
-    // Video Player-at
-    const videoPreview = document.getElementById('video-preview-player');
+    // Elementet e Video dhe OSD
     const videoFullscreen = document.getElementById('fullscreen-video-player');
     const fullscreenContainer = document.getElementById('fullscreen-player-container');
-    const previewMessage = document.getElementById('preview-message');
+    const osdMenu = document.getElementById('osd-menu');
+    const osdChannelList = document.getElementById('osd-channel-list');
+
+    // Këtu ruhet informacioni i kanalit që po luhet aktualisht në fullscreen
+    let isVideoPlaying = false; 
 
     /**
-     * Përdor HLS.js për të ngarkuar dhe luajtur transmetimin në elementin e caktuar video.
-     * @param {string} url - URL e transmetimit (p.sh., .m3u8)
-     * @param {HTMLVideoElement} targetVideo - Elementi <video> ku do të luhet
-     * @param {string} name - Emri i kanalit
+     * Shkatërron instancën aktuale të HLS
      */
-    function loadChannel(url, targetVideo, name) {
-        if (!url) return;
-
-        // Shkatërron instancën e mëparshme të HLS nëse ekziston
-        if (hls && hls.media === targetVideo) {
+    function destroyHls() {
+        if (hls) {
             hls.destroy();
             hls = null;
         }
+    }
 
-        currentVideoElement = targetVideo;
+    /**
+     * Përdor HLS.js për të ngarkuar dhe luajtur transmetimin në elementin e caktuar video.
+     */
+    function loadChannel(url, name) {
+        if (!url) return;
 
-        // Nëse është lojtari i ri, shfaq mesazhin e ngarkimit nëse nuk është fullscreen
-        if (targetVideo !== videoFullscreen) {
-            currentChannelInfo.textContent = `Ngarkohet: ${name}...`;
-            previewMessage.textContent = 'Ngarkohet...';
-            previewMessage.classList.remove('hidden');
-        }
+        destroyHls(); 
+        
+        currentChannel.url = url;
+        currentChannel.name = name;
 
+        // Siguron që videoja të luajë në lojtarin Fullscreen
+        const targetVideo = videoFullscreen;
+        
         if (Hls.isSupported()) {
             hls = new Hls({
-                // Konfigurime shtesë për rikuperim të gabimeve në TV
                 liveSyncDuration: 1.5,
                 liveMaxLatencyDuration: 10,
             });
@@ -220,54 +236,43 @@
 
             hls.on(Hls.Events.MANIFEST_PARSED, function () {
                 targetVideo.play().catch(e => {
-                    // Për desktop/mobile, mund të duhet një klikim i përdoruesit
-                    console.log("Autoplay dështoi.", e); 
+                    console.warn("Autoplay dështoi. Kërkohet ndërveprim i përdoruesit.", e);
                 });
-                if (targetVideo !== videoFullscreen) {
-                    currentChannelInfo.textContent = name;
-                    previewMessage.classList.add('hidden');
-                }
+                isVideoPlaying = true;
+                console.log(`Duke luajtur: ${name}`);
             });
 
             hls.on(Hls.Events.ERROR, function (event, data) {
                 console.error("HLS Error:", data);
+                // Nëse ka gabime serioze, shkatërron lojtarin dhe kthehet
                 if (data.fatal) {
-                    // Logjikë rikuperimi
-                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                        hls.startLoad();
-                    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                        hls.recoverMediaError();
-                    }
-                }
-                if (targetVideo !== videoFullscreen) {
-                    currentChannelInfo.textContent = `Gabim: ${name} (Kontrollo URL)`;
-                    previewMessage.textContent = 'Gabim gjatë luajtjes.';
-                    previewMessage.classList.remove('hidden');
+                    console.error("Gabim Fatal HLS. Duke u kthyer te lista.");
+                    exitFullscreen(); 
+                    alert('Gabim fatal në transmetim. Ju lutemi provoni një kanal tjetër.'); // Përdorim alert vetëm këtu pasi është një gabim serioz
                 }
             });
 
         } else if (targetVideo.canPlayType('application/vnd.apple.mpegurl')) {
-            // Për shfletuesit që mbështesin natyrisht HLS (p.sh., Safari, iOS)
             targetVideo.src = url;
             targetVideo.addEventListener('loadedmetadata', function() {
                 targetVideo.play();
+                isVideoPlaying = true;
             });
-            if (targetVideo !== videoFullscreen) {
-                currentChannelInfo.textContent = name;
-                previewMessage.classList.add('hidden');
-            }
         } else {
-             // Mesazh gabimi nëse HLS nuk mbështetet
-             if (targetVideo !== videoFullscreen) {
-                currentChannelInfo.textContent = `Nuk mbështetet lojtari: ${name}`;
-                previewMessage.textContent = 'Nuk mbështetet HLS.';
-                previewMessage.classList.remove('hidden');
-            }
+             console.error('Nuk mbështetet HLS.');
         }
+        
+        // Përditëson klasat 'active' për kanalet në OSD
+        document.querySelectorAll('.osd-channel-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.name === name) {
+                item.classList.add('active');
+            }
+        });
     }
 
     /**
-     * Kalon në ekranin e kanaleve dhe ngarkon listën e kanaleve të kategorisë së zgjedhur.
+     * Kalon në ekranin e kanaleve
      */
     function goToChannelsScreen(category) {
         currentCategory = category;
@@ -276,9 +281,9 @@
         categoryScreen.classList.add('hidden');
         channelsScreen.classList.remove('hidden');
         
-        renderChannels();
+        renderChannels(channelListContainer, 'channel-item');
 
-        // Fokuson butonin e kthimit për navigim të menjëhershëm D-Pad
+        // Fokuson butonin e kthimit për navigim D-Pad
         setTimeout(() => {
             backButton.focus();
         }, 100);
@@ -288,29 +293,15 @@
      * Kthehet në ekranin kryesor të kategorive.
      */
     function goToCategoryScreen() {
-        // Ndalohet çdo lojtar preview aktual
-        if (hls) {
-            hls.destroy();
-            hls = null;
-        }
-        videoPreview.pause();
-        videoPreview.removeAttribute('src');
-        videoPreview.load();
-
+        destroyHls();
+        videoFullscreen.pause();
         channelsScreen.classList.add('hidden');
         categoryScreen.classList.remove('hidden');
 
-        // Përditëson informacionin
-        currentChannelInfo.textContent = 'Nuk ka kanal të përzgjedhur.';
-        previewMessage.textContent = 'Zgjidhni një kanal për t\'u luajtur';
-        previewMessage.classList.remove('hidden');
-        
-        // Fokuson kartën e parë të kategorisë për navigim
+        // Rikthen fokusin te karta e parë
         setTimeout(() => {
             const firstCard = categoryCardsContainer.querySelector('.category-card');
-            if (firstCard) {
-                firstCard.focus();
-            }
+            if (firstCard) { firstCard.focus(); }
         }, 100);
     }
     
@@ -318,25 +309,20 @@
      * Nis modalitetin fullscreen pa kontrolle.
      */
     function enterFullscreen(url, name) {
-        // Ndalohet lojtari preview
-        if (hls) {
-            hls.destroy();
-            hls = null;
-        }
-        videoPreview.pause();
-
+        // Mbyllet OSD nëse është e hapur
+        hideOSD();
+        
         fullscreenContainer.classList.remove('hidden');
+        loadChannel(url, name);
         
-        // Luhet në lojtarin fullscreen
-        loadChannel(url, videoFullscreen, name);
-        
-        // Kërkon Fullscreen nga shfletuesi
-        if (fullscreenContainer.requestFullscreen) {
-            fullscreenContainer.requestFullscreen();
-        } else if (fullscreenContainer.webkitRequestFullscreen) { /* Safari */
-            fullscreenContainer.webkitRequestFullscreen();
-        } else if (fullscreenContainer.msRequestFullscreen) { /* IE11 */
-            fullscreenContainer.msRequestFullscreen();
+        // Kërkon Fullscreen
+        const el = fullscreenContainer;
+        if (el.requestFullscreen) {
+            el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) { 
+            el.webkitRequestFullscreen();
+        } else if (el.msRequestFullscreen) { 
+            el.msRequestFullscreen();
         }
     }
 
@@ -346,36 +332,62 @@
     function exitFullscreen() {
         if (document.exitFullscreen) {
             document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) { /* Safari */
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { /* IE11 */
+        } else if (document.webkitExitFullscreen) { 
+            document.webkitExitExitFullscreen();
+        } else if (document.msExitFullscreen) { 
             document.msExitFullscreen();
         }
 
-        // Shkatërron lojtarin fullscreen
-        if (hls) {
-            hls.destroy();
-            hls = null;
-        }
+        destroyHls();
         videoFullscreen.pause();
         videoFullscreen.removeAttribute('src');
         videoFullscreen.load();
 
         fullscreenContainer.classList.add('hidden');
+        isVideoPlaying = false;
         
-        // Kthehet te lojtari preview me kanalin e ri (ose kanalin e fundit të luajtur)
-        const activeChannel = document.querySelector('.channel-item.active');
-        if (activeChannel) {
-            loadChannel(activeChannel.dataset.url, videoPreview, activeChannel.dataset.name);
-            activeChannel.focus(); // Rikthen fokusin te kanali i zgjedhur
+        // Kthehet te lista e kanaleve dhe rifokuson kanalin e fundit
+        setTimeout(() => {
+            const activeChannel = channelListContainer.querySelector('.channel-item.active');
+            if (activeChannel) {
+                activeChannel.focus(); 
+            } else {
+                goToCategoryScreen(); 
+            }
+        }, 100);
+    }
+    
+    /**
+     * Shfaq menunë OSD dhe fokuson kanalin aktiv.
+     */
+    function showOSD() {
+        osdMenu.classList.add('active');
+        
+        // Renderon kanalet në OSD
+        renderChannels(osdChannelList, 'osd-channel-item');
+        
+        // Gjen dhe fokuson kanalin aktiv
+        const activeItem = osdChannelList.querySelector('.osd-channel-item.active');
+        if (activeItem) {
+            activeItem.focus();
         } else {
-            // Kthehet në ekranin kryesor nëse nuk ka kanal aktiv
-            goToCategoryScreen(); 
+            // Nëse nuk ka kanal aktiv, fokuson kanalin e parë
+            const firstItem = osdChannelList.querySelector('.osd-channel-item');
+            if (firstItem) { firstItem.focus(); }
         }
     }
 
     /**
-     * Ndërton kartat e kategorive.
+     * Fsheh menunë OSD dhe kthehet te luajtja.
+     */
+    function hideOSD() {
+        osdMenu.classList.remove('active');
+        // Kthe fokusin te video player-i (ose thjesht te body) për të dëgjuar butonin OK përsëri
+        document.body.focus(); 
+    }
+
+    /**
+     * Ndërton kartat e kategorive (rresht horizontal).
      */
     function renderCategoryCards() {
         categoryCardsContainer.innerHTML = ''; 
@@ -383,19 +395,13 @@
 
         categories.forEach(category => {
             const card = document.createElement('div');
-            card.className = 'category-card interactive-item bg-gray-800 p-8 rounded-2xl shadow-xl hover:bg-gray-700 text-center font-bold text-3xl h-48 flex items-center justify-center';
+            card.className = 'category-card interactive-item px-10 py-6 m-2 rounded-xl shadow-xl hover:bg-gray-700/80 text-center font-bold text-xl flex-shrink-0';
             card.textContent = category;
-            card.setAttribute('tabindex', '0'); // Për fokusin e telekomandës
+            card.setAttribute('tabindex', '0'); 
             
-            // Menaxhimi i klikimit (Enter me telekomandë ose Click me mouse)
-            card.addEventListener('click', () => {
-                goToChannelsScreen(category);
-            });
-            
+            card.addEventListener('click', () => { goToChannelsScreen(category); });
             card.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    goToChannelsScreen(category);
-                }
+                if (e.key === 'Enter') { goToChannelsScreen(category); }
             });
 
             categoryCardsContainer.appendChild(card);
@@ -404,44 +410,51 @@
         // Fokusimi fillestar te karta e parë
         setTimeout(() => {
             const firstCard = categoryCardsContainer.querySelector('.category-card');
-            if (firstCard) {
-                firstCard.focus();
-            }
+            if (firstCard) { firstCard.focus(); }
         }, 300);
     }
     
     /**
-     * Ndërton listën e kanaleve për kategorinë aktuale.
+     * Ndërton listën e kanaleve.
+     * @param {HTMLElement} targetContainer - Kontejneri ku do të shtohen kanalet (Lista e Kanaleve ose OSD).
+     * @param {string} itemClass - Klasa e artikullit (channel-item ose osd-channel-item).
      */
-    function renderChannels() {
+    function renderChannels(targetContainer, itemClass) {
         const channelList = channels[currentCategory] || [];
-        channelListContainer.innerHTML = ''; 
+        targetContainer.innerHTML = ''; 
         
-        channelList.forEach((channel, index) => {
+        channelList.forEach((channel) => {
             const channelItem = document.createElement('div');
-            channelItem.className = 'channel-item interactive-item flex items-center p-3 rounded-lg hover:bg-gray-700/80';
+            channelItem.className = `${itemClass} interactive-item flex items-center p-3 rounded-lg border-2 border-transparent hover:bg-gray-700/80`;
             channelItem.setAttribute('tabindex', '0'); 
             channelItem.setAttribute('data-url', channel.url);
             channelItem.setAttribute('data-name', channel.name);
             
-            const icon = document.createElement('div');
-            icon.className = 'w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0';
-            icon.textContent = channel.name.charAt(0);
-            
+            // Shënon kanalin aktual si aktiv në OSD
+            if (channel.url === currentChannel.url && isVideoPlaying && itemClass === 'osd-channel-item') {
+                channelItem.classList.add('active');
+            }
+
             const nameElement = document.createElement('span');
-            nameElement.className = 'text-base font-medium truncate';
+            nameElement.className = 'text-base font-medium truncate ml-2';
             nameElement.textContent = channel.name;
 
-            channelItem.appendChild(icon);
             channelItem.appendChild(nameElement);
 
-            // Zgjedhja e kanalit (Luhet menjëherë në Fullscreen)
+            // Menaxhimi i klikimit/zgjedhjes
             channelItem.addEventListener('click', () => {
-                document.querySelectorAll('.channel-item').forEach(item => item.classList.remove('active'));
+                // Heq klasën 'active' nga të gjithë dhe e shton te i zgjedhuri
+                document.querySelectorAll(`.${itemClass}`).forEach(item => item.classList.remove('active'));
                 channelItem.classList.add('active');
-                currentChannelInfo.textContent = channel.name;
-                // Nis luajtjen në Fullscreen
-                enterFullscreen(channel.url, channel.name);
+                
+                if (itemClass === 'channel-item') {
+                    // Nga lista kryesore: Shko në Fullscreen
+                    enterFullscreen(channel.url, channel.name);
+                } else if (itemClass === 'osd-channel-item') {
+                    // Nga OSD: Ndërro kanalin dhe mbylle OSD
+                    loadChannel(channel.url, channel.name);
+                    hideOSD();
+                }
             });
             
             // Për Telecommandën (Enter)
@@ -451,36 +464,79 @@
                 }
             });
 
-            channelListContainer.appendChild(channelItem);
+            targetContainer.appendChild(channelItem);
         });
     }
+
+    /**
+     * Funksioni për të menaxhuar tastet globale kur jemi në Fullscreen.
+     */
+    function handleGlobalKeydown(e) {
+        if (fullscreenContainer.classList.contains('hidden')) {
+            return; // Vetëm kur jemi në fullscreen
+        }
+        
+        const isOSDVisible = osdMenu.classList.contains('active');
+        // Këtu duhet të shtoni kodet e tastit 'OK' të telekomandave. Tastet më të zakonshme janë Enter (13) ose KeyCode 10009
+        
+        if (e.key === 'Enter' || e.key === ' ') { // OK/Enter key
+            e.preventDefault();
+            
+            if (!isOSDVisible) {
+                // 1. Shfaq OSD
+                showOSD();
+            } else {
+                // 2. OSD është aktive: Bëj veprimin (zgjedhja e kanalit ose fshehja)
+                const focusedItem = document.activeElement;
+                if (focusedItem && focusedItem.classList.contains('osd-channel-item')) {
+                    // Zgjidh kanalin
+                    focusedItem.click(); 
+                } else {
+                    // Asgjë e fokusuar në OSD: Fsheh OSD
+                    hideOSD(); 
+                }
+            }
+        } else if (e.key === 'Escape' || e.key === 'Backspace' || e.key === 'Menu') { // Për butonin 'Back' të TV
+            if (isOSDVisible) {
+                e.preventDefault(); // Parandalon daljen nga fullscreen
+                hideOSD();
+            } else {
+                // Nëse nuk është OSD e hapur, shtypja e Back del nga fullscreen
+                exitFullscreen(); 
+            }
+        }
+    }
+
 
     // Inicializimi i aplikacionit
     window.onload = function() {
         renderCategoryCards();
         
-        // Kthehu butoni
+        // Dëgjuesi për butonin Kthehu
         backButton.addEventListener('click', goToCategoryScreen);
         backButton.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                goToCategoryScreen();
-            }
+            if (e.key === 'Enter') { goToCategoryScreen(); }
         });
 
-        // Dëgjuesi për daljen nga fullscreen (me butonin 'Back' ose 'Esc' të telekomandës)
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                // Nëse jemi duke dalë nga fullscreen, kthehemi në ekranin e kanaleve
-                exitFullscreen();
-            }
+        // Dëgjuesi për daljen nga fullscreen (me butonin 'Back'/'Esc' të shfletuesit)
+        document.addEventListener('fullscreenchange', () => { 
+            if (!document.fullscreenElement && isVideoPlaying) { 
+                exitFullscreen(); 
+            } 
         });
-        document.addEventListener('webkitfullscreenchange', () => {
-             if (!document.webkitIsFullScreen) { exitFullscreen(); }
+        document.addEventListener('webkitfullscreenchange', () => { 
+            if (!document.webkitIsFullScreen && isVideoPlaying) { 
+                exitFullscreen(); 
+            } 
         });
-        document.addEventListener('msfullscreenchange', () => {
-            if (!document.msFullscreenElement) { exitFullscreen(); }
+        document.addEventListener('msfullscreenchange', () => { 
+            if (!document.msFullscreenElement && isVideoPlaying) { 
+                exitFullscreen(); 
+            } 
         });
         
+        // Dëgjuesi i tastierës globale (për OK/Enter dhe Back/Esc)
+        document.addEventListener('keydown', handleGlobalKeydown);
     };
 
     // Vendosja e nivelit të regjistrimit për HLS.js
