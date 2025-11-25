@@ -1,630 +1,495 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sq">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPTV Player</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>Live TV Player (M3U8/TS)</title>
+    <!-- Tailwind CSS CDN for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HLS.js CDN for M3U8/HLS streaming support -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.0"></script>
     <style>
-        :root {
-            --light-blue: #60A5FA;
-            --medium-blue: #3B82F6;
-            --dark-blue: #1E3A8A;
-            --background: #0f0f0f;
-            --card-bg: #1a1a1a;
-            --border: #333333;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Përdorimi i një font-i modern për ndjesi të avancuar */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--background);
-            color: var(--text-primary);
-            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Sfond i errët për ndjesi kinemaje */
+            color: #e5e7eb;
+            overflow: hidden; /* Heq scroll-in e faqes kryesore */
+            transition: background-color 0.3s;
+        }
+        
+        /* Stilizim i Forcëzuar i Fokusit (Pop-up Effect) */
+        .interactive-item:focus {
+            background-color: #3b82f6 !important; 
+            color: white !important;
+            transform: scale(1.10); /* Zmadhim më i theksuar për TV */
+            box-shadow: 0 16px 40px rgba(59, 130, 246, 0.7); 
+            outline: none;
+            z-index: 10;
         }
 
-        .container {
-            width: 100%;
-            height: 100vh;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--light-blue), var(--medium-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .category-card {
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 30px;
+        /* Klasa e re për të trajtuar fokusin e elementeve interaktive */
+        .category-card, .channel-item {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, background-color 0.3s;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
         }
 
-        .category-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, var(--light-blue), var(--medium-blue));
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
+        /* Stili i kanalit aktual që po luhet */
+        .channel-item.active {
+            background-color: #2563eb; 
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
         }
 
-        .category-card:hover {
-            border-color: var(--medium-blue);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        /* Fsheh ekranin e kategorive kur jemi në ekranin e kanaleve */
+        .hidden-category-screen {
+            display: none !important;
         }
 
-        .category-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .category-card:focus {
-            outline: 3px solid var(--light-blue);
-            outline-offset: 2px;
-        }
-
-        .category-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        .category-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .category-count {
-            color: var(--light-blue);
-            font-size: 0.95rem;
-        }
-
-        .channels-view {
-            display: none;
-            padding: 20px;
-        }
-
-        .channels-view.active {
-            display: block;
-        }
-
-        .back-button {
-            background: linear-gradient(135deg, var(--medium-blue), var(--dark-blue));
-            color: var(--text-primary);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            margin-bottom: 30px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .back-button:hover {
-            background: linear-gradient(135deg, var(--light-blue), var(--medium-blue));
-            transform: translateX(-5px);
-            box-shadow: 0 5px 15px rgba(96, 165, 250, 0.4);
-        }
-
-        .back-button:focus {
-            outline: 3px solid var(--light-blue);
-            outline-offset: 2px;
-        }
-
-        .channels-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            max-width: 1400px;
-        }
-
-        .channel-card {
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .channel-card:hover {
-            border-color: var(--light-blue);
-            background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.1));
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(96, 165, 250, 0.3);
-        }
-
-        .channel-card:focus {
-            outline: 3px solid var(--light-blue);
-            outline-offset: 2px;
-        }
-
-        .channel-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .player-view {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: var(--background);
-            z-index: 1000;
-        }
-
-        .player-view.active {
-            display: block;
-        }
-
-        #videoPlayer {
+        /* Stilizimi i Video Player-it */
+        #video-player {
             width: 100%;
             height: 100%;
-            background: #000;
-        }
-
-        .overlay-menu {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
-            z-index: 2000;
-            overflow-y: auto;
-            padding: 40px 20px;
         }
-
-        .overlay-menu.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .overlay-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .overlay-header h2 {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, var(--light-blue), var(--medium-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .overlay-current {
-            color: var(--light-blue);
-            font-size: 1.1rem;
-        }
-
-        .overlay-channels {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .overlay-channel {
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .overlay-channel:hover {
-            border-color: var(--light-blue);
-            background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(59, 130, 246, 0.15));
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4);
-        }
-
-        .overlay-channel.playing {
-            border-color: var(--medium-blue);
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(30, 58, 138, 0.2));
-        }
-
-        .overlay-channel:focus {
-            outline: 3px solid var(--light-blue);
-            outline-offset: 2px;
-        }
-
-        .controls-hint {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(59, 130, 246, 0.9);
-            color: var(--text-primary);
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            z-index: 2001;
-            animation: slideUp 0.5s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateX(-50%) translateY(100px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(-50%) translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--light-blue);
-            font-size: 1.2rem;
-            z-index: 3000;
-        }
-
-        .spinner {
-            border: 4px solid rgba(96, 165, 250, 0.2);
-            border-top: 4px solid var(--light-blue);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .categories-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .channels-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            }
-
-            .overlay-channels {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
-            }
-
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
-            .channels-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .overlay-channels {
-                grid-template-columns: 1fr;
-            }
+        
+        /* Stilizimi për listën e kanaleve */
+        #channel-list {
+            max-height: calc(100vh - 150px); /* Llogarit lartësinë e mbetur */
         }
     </style>
 </head>
-<body>
-    <div class="container" id="categoriesView">
-        <div class="header">
-            <h1>📺 IPTV Player</h1>
-            <p>Select a category to browse channels</p>
-        </div>
-        <div class="categories-grid">
-            <div class="category-card" tabindex="0" data-category="live">
-                <div class="category-icon">🔴</div>
-                <div class="category-title">Live TV</div>
-                <div class="category-count">7 channels</div>
-            </div>
-            <div class="category-card" tabindex="0" data-category="sports">
-                <div class="category-icon">⚽</div>
-                <div class="category-title">Sports</div>
-                <div class="category-count">Coming soon</div>
-            </div>
-            <div class="category-card" tabindex="0" data-category="movies">
-                <div class="category-icon">🎬</div>
-                <div class="category-title">Movies</div>
-                <div class="category-count">Coming soon</div>
-            </div>
-            <div class="category-card" tabindex="0" data-category="news">
-                <div class="category-icon">📰</div>
-                <div class="category-title">News</div>
-                <div class="category-count">Coming soon</div>
+<body class="min-h-screen">
+
+    <!-- Kontejneri Kryesor i Faqes (Përdoret për të fshehur/shfaqur faqet) -->
+    <div id="main-container" class="min-h-screen">
+
+        <!-- Ekrani 1: Faqja Kryesore - Vetëm Kategoritë -->
+        <div id="category-screen" class="flex flex-col items-center justify-center min-h-screen p-8">
+            <h1 class="text-5xl font-extrabold text-white mb-12">Zgjidhni Kategorinë</h1>
+            
+            <div id="category-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 w-full max-w-6xl">
+                <!-- Kartat e Kategorive do të gjenerohen këtu -->
             </div>
         </div>
-    </div>
 
-    <div class="channels-view" id="channelsView">
-        <button class="back-button" id="backToCategories">← Back to Categories</button>
-        <div class="channels-grid" id="channelsGrid"></div>
-    </div>
+        <!-- Ekrani 2: Faqja e Kanaleve - Listë dhe Player (Fillimisht i Fshehur) -->
+        <div id="channels-screen" class="hidden min-h-screen flex flex-col">
+            
+            <header class="p-4 bg-gray-900 shadow-xl border-b border-gray-700 flex justify-between items-center">
+                <button id="back-button" class="interactive-item px-4 py-2 bg-gray-700 text-white rounded-lg font-semibold" tabindex="0">
+                    < Back
+                </button>
+                <h1 id="current-category-title" class="text-3xl font-extrabold text-white">Live TV</h1>
+                <div class="w-20"></div> <!-- Placeholder për qendërsim -->
+            </header>
 
-    <div class="player-view" id="playerView">
-        <video id="videoPlayer" controls></video>
-    </div>
+            <!-- Kontejneri kryesor Player dhe Lista -->
+            <div class="flex flex-col lg:flex-row flex-grow">
+                
+                <!-- Seksioni 2: Player (Zgjedhja e Kanalit) -->
+                <main class="lg:w-3/4 p-4 lg:p-6 flex flex-col space-y-4">
+                    
+                    <!-- Kontejneri i Video Player-it për t'u shfaqur si 'thumbnail' -->
+                    <div class="relative bg-black rounded-xl shadow-2xl overflow-hidden aspect-video">
+                        <video id="video-preview-player" playsinline class="rounded-xl w-full h-full"></video>
+                        <div id="preview-message" class="absolute inset-0 flex items-center justify-center text-white text-3xl font-bold bg-black/70">
+                            Zgjidhni një kanal për t'u luajtur
+                        </div>
+                    </div>
 
-    <div class="overlay-menu" id="overlayMenu">
-        <div class="overlay-header">
-            <h2>Select Channel</h2>
-            <p class="overlay-current">Currently playing: <span id="currentChannel">None</span></p>
+                    <!-- Informacioni i Kanalit -->
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                        <p class="text-lg font-semibold text-blue-400">Tani i përzgjedhur:</p>
+                        <p id="current-channel-info" class="text-2xl font-bold text-white">Nuk ka kanal të përzgjedhur.</p>
+                    </div>
+                </main>
+
+                <!-- Seksioni 3: Lista e Kanaleve -->
+                <aside class="lg:w-1/4 bg-gray-900 p-4 lg:p-6 shadow-2xl flex flex-col rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl">
+                    
+                    <h2 class="text-2xl font-bold mb-3 text-white border-b border-gray-700 pb-2">Kanalet</h2>
+
+                    <div id="channel-list" class="flex-grow space-y-2 overflow-y-auto pr-1">
+                        <!-- Kanale do të gjenerohen këtu -->
+                    </div>
+
+                </aside>
+            </div>
         </div>
-        <div class="overlay-channels" id="overlayChannels"></div>
-        <div class="controls-hint">Press ESC to close | ENTER/SPACE to toggle menu</div>
+        
     </div>
 
-    <div class="loading" id="loading" style="display: none;">
-        <div class="spinner"></div>
-        <div>Loading channel...</div>
+    <!-- Seksioni Fullscreen Video (I fshehur derisa të luhet kanali) -->
+    <div id="fullscreen-player-container" class="fixed inset-0 bg-black z-50 hidden">
+        <!-- Vini re: Pa controls, me autoplay, muted=false, dhe playsinline -->
+        <video id="fullscreen-video-player" autoplay playsinline muted=false class="w-full h-full"></video>
     </div>
 
-    <script>
-        const channels = {
-            live: [
-                { name: "RTK 1", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/98r-d35-487-v6m/tracks-v4a1/mono.ts.m3u8" },
-                { name: "RTK 3", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/rtk3/tracks-v4a1/mono.ts.m3u8" },
-                { name: "T7", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream-specific/1z8-byc-4ee-lc9/tracks-v2a1/mono.m3u8" },
-                { name: "RTV21 HD", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-live/2cz-npl-jfn-9he/tracks-v2a1/mono.m3u8" },
-                { name: "KTV HD", url: "http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/lj9-pxm-o53-rp0/tracks-v4a1/mono.m3u8" },
-                { name: "Test 1", url: "#" },
-                { name: "Test 2", url: "#" }
-            ]
-        };
+<script>
+    // Konfigurimi i kanalit (URL-të e vërteta m3u8 duhet të vendosen këtu)
+    const channels = {
+        'Live TV': [
+            { name: 'Demo TV 1', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+            { name: 'Demo TV 2', url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8' },
+            { name: 'Lajme Global', url: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' },
+            { name: 'Komedie Klasike', url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8' }
+        ],
+        'Sport': [
+            { name: 'Futboll Demo', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+            { name: 'Basketboll', url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8' },
+            { name: 'Garat e Makinave', url: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' },
+            { name: 'Tenis', url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8' }
+        ],
+        'Filma': [
+            { name: 'Aksion HD', url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8' },
+            { name: 'Romancë', url: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' },
+            { name: 'Triller', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+            { name: 'Fantazi', url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8' }
+        ],
+        'Doku': [
+            { name: 'Natyrë', url: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' },
+            { name: 'Histori', url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8' },
+            { name: 'Shkencë', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+            { name: 'Udhëtim', url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8' }
+        ],
+        'Fëmijë': [
+            { name: 'Vizatimor 1', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+            { name: 'Vizatimor 2', url: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' },
+            { name: 'Këngë për Fëmijë', url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8' },
+            { name: 'Përralla', url: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8' }
+        ]
+    };
 
-        let currentCategory = null;
-        let currentChannelIndex = -1;
-        let hls = null;
+    let hls = null;
+    let currentCategory = ''; 
+    let currentVideoElement = null; // Mban referencën e lojtarit aktual
 
-        const categoriesView = document.getElementById('categoriesView');
-        const channelsView = document.getElementById('channelsView');
-        const playerView = document.getElementById('playerView');
-        const overlayMenu = document.getElementById('overlayMenu');
-        const channelsGrid = document.getElementById('channelsGrid');
-        const overlayChannels = document.getElementById('overlayChannels');
-        const videoPlayer = document.getElementById('videoPlayer');
-        const loading = document.getElementById('loading');
-        const currentChannelSpan = document.getElementById('currentChannel');
+    const categoryScreen = document.getElementById('category-screen');
+    const channelsScreen = document.getElementById('channels-screen');
+    const categoryCardsContainer = document.getElementById('category-cards-container');
+    const channelListContainer = document.getElementById('channel-list');
+    const currentCategoryTitle = document.getElementById('current-category-title');
+    const currentChannelInfo = document.getElementById('current-channel-info');
+    const backButton = document.getElementById('back-button');
+    
+    // Video Player-at
+    const videoPreview = document.getElementById('video-preview-player');
+    const videoFullscreen = document.getElementById('fullscreen-video-player');
+    const fullscreenContainer = document.getElementById('fullscreen-player-container');
+    const previewMessage = document.getElementById('preview-message');
 
-        // Category selection
-        document.querySelectorAll('.category-card').forEach(card => {
-            card.addEventListener('click', () => selectCategory(card.dataset.category));
-            card.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    selectCategory(card.dataset.category);
-                }
+    /**
+     * Përdor HLS.js për të ngarkuar dhe luajtur transmetimin në elementin e caktuar video.
+     * @param {string} url - URL e transmetimit (p.sh., .m3u8)
+     * @param {HTMLVideoElement} targetVideo - Elementi <video> ku do të luhet
+     * @param {string} name - Emri i kanalit
+     */
+    function loadChannel(url, targetVideo, name) {
+        if (!url) return;
+
+        // Shkatërron instancën e mëparshme të HLS nëse ekziston
+        if (hls && hls.media === targetVideo) {
+            hls.destroy();
+            hls = null;
+        }
+
+        currentVideoElement = targetVideo;
+
+        // Nëse është lojtari i ri, shfaq mesazhin e ngarkimit nëse nuk është fullscreen
+        if (targetVideo !== videoFullscreen) {
+            currentChannelInfo.textContent = `Ngarkohet: ${name}...`;
+            previewMessage.textContent = 'Ngarkohet...';
+            previewMessage.classList.remove('hidden');
+        }
+
+        if (Hls.isSupported()) {
+            hls = new Hls({
+                // Konfigurime shtesë për rikuperim të gabimeve në TV
+                liveSyncDuration: 1.5,
+                liveMaxLatencyDuration: 10,
             });
-        });
-
-        function selectCategory(category) {
-            if (!channels[category]) {
-                alert('This category is coming soon!');
-                return;
-            }
-            currentCategory = category;
-            showChannels();
-        }
-
-        function showChannels() {
-            categoriesView.style.display = 'none';
-            channelsView.classList.add('active');
+            hls.attachMedia(targetVideo);
             
-            channelsGrid.innerHTML = '';
-            channels[currentCategory].forEach((channel, index) => {
-                const card = document.createElement('div');
-                card.className = 'channel-card';
-                card.tabIndex = 0;
-                card.innerHTML = `<div class="channel-name">${channel.name}</div>`;
-                card.addEventListener('click', () => playChannel(index));
-                card.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        playChannel(index);
-                    }
-                });
-                channelsGrid.appendChild(card);
-            });
-        }
-
-        function playChannel(index) {
-            const channel = channels[currentCategory][index];
-            if (channel.url === '#') {
-                alert('Test channel - no stream available');
-                return;
-            }
-
-            currentChannelIndex = index;
-            currentChannelSpan.textContent = channel.name;
-            
-            channelsView.classList.remove('active');
-            playerView.classList.add('active');
-            
-            loadStream(channel.url);
-            updateOverlayChannels();
-        }
-
-        function loadStream(url) {
-            loading.style.display = 'block';
-            
-            if (hls) {
-                hls.destroy();
-            }
-
-            if (Hls.isSupported()) {
-                hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                });
+            hls.on(Hls.Events.MEDIA_ATTACHED, function () {
                 hls.loadSource(url);
-                hls.attachMedia(videoPlayer);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    videoPlayer.play();
-                    loading.style.display = 'none';
-                });
-                hls.on(Hls.Events.ERROR, (event, data) => {
-                    console.error('HLS error:', data);
-                    loading.style.display = 'none';
-                    if (data.fatal) {
-                        alert('Failed to load stream');
-                    }
-                });
-            } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-                videoPlayer.src = url;
-                videoPlayer.addEventListener('loadedmetadata', () => {
-                    videoPlayer.play();
-                    loading.style.display = 'none';
-                });
-            } else {
-                alert('HLS not supported in this browser');
-                loading.style.display = 'none';
-            }
-        }
-
-        function updateOverlayChannels() {
-            overlayChannels.innerHTML = '';
-            channels[currentCategory].forEach((channel, index) => {
-                const card = document.createElement('div');
-                card.className = 'overlay-channel';
-                if (index === currentChannelIndex) {
-                    card.classList.add('playing');
-                }
-                card.tabIndex = 0;
-                card.innerHTML = `<div class="channel-name">${channel.name}</div>`;
-                card.addEventListener('click', () => {
-                    if (channel.url !== '#') {
-                        currentChannelIndex = index;
-                        currentChannelSpan.textContent = channel.name;
-                        loadStream(channel.url);
-                        updateOverlayChannels();
-                        overlayMenu.classList.remove('active');
-                    }
-                });
-                overlayChannels.appendChild(card);
             });
+
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                targetVideo.play().catch(e => {
+                    // Për desktop/mobile, mund të duhet një klikim i përdoruesit
+                    console.log("Autoplay dështoi.", e); 
+                });
+                if (targetVideo !== videoFullscreen) {
+                    currentChannelInfo.textContent = name;
+                    previewMessage.classList.add('hidden');
+                }
+            });
+
+            hls.on(Hls.Events.ERROR, function (event, data) {
+                console.error("HLS Error:", data);
+                if (data.fatal) {
+                    // Logjikë rikuperimi
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        hls.startLoad();
+                    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                        hls.recoverMediaError();
+                    }
+                }
+                if (targetVideo !== videoFullscreen) {
+                    currentChannelInfo.textContent = `Gabim: ${name} (Kontrollo URL)`;
+                    previewMessage.textContent = 'Gabim gjatë luajtjes.';
+                    previewMessage.classList.remove('hidden');
+                }
+            });
+
+        } else if (targetVideo.canPlayType('application/vnd.apple.mpegurl')) {
+            // Për shfletuesit që mbështesin natyrisht HLS (p.sh., Safari, iOS)
+            targetVideo.src = url;
+            targetVideo.addEventListener('loadedmetadata', function() {
+                targetVideo.play();
+            });
+            if (targetVideo !== videoFullscreen) {
+                currentChannelInfo.textContent = name;
+                previewMessage.classList.add('hidden');
+            }
+        } else {
+             // Mesazh gabimi nëse HLS nuk mbështetet
+             if (targetVideo !== videoFullscreen) {
+                currentChannelInfo.textContent = `Nuk mbështetet lojtari: ${name}`;
+                previewMessage.textContent = 'Nuk mbështetet HLS.';
+                previewMessage.classList.remove('hidden');
+            }
+        }
+    }
+
+    /**
+     * Kalon në ekranin e kanaleve dhe ngarkon listën e kanaleve të kategorisë së zgjedhur.
+     */
+    function goToChannelsScreen(category) {
+        currentCategory = category;
+        currentCategoryTitle.textContent = category;
+        
+        categoryScreen.classList.add('hidden');
+        channelsScreen.classList.remove('hidden');
+        
+        renderChannels();
+
+        // Fokuson butonin e kthimit për navigim të menjëhershëm D-Pad
+        setTimeout(() => {
+            backButton.focus();
+        }, 100);
+    }
+
+    /**
+     * Kthehet në ekranin kryesor të kategorive.
+     */
+    function goToCategoryScreen() {
+        // Ndalohet çdo lojtar preview aktual
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        videoPreview.pause();
+        videoPreview.removeAttribute('src');
+        videoPreview.load();
+
+        channelsScreen.classList.add('hidden');
+        categoryScreen.classList.remove('hidden');
+
+        // Përditëson informacionin
+        currentChannelInfo.textContent = 'Nuk ka kanal të përzgjedhur.';
+        previewMessage.textContent = 'Zgjidhni një kanal për t\'u luajtur';
+        previewMessage.classList.remove('hidden');
+        
+        // Fokuson kartën e parë të kategorisë për navigim
+        setTimeout(() => {
+            const firstCard = categoryCardsContainer.querySelector('.category-card');
+            if (firstCard) {
+                firstCard.focus();
+            }
+        }, 100);
+    }
+    
+    /**
+     * Nis modalitetin fullscreen pa kontrolle.
+     */
+    function enterFullscreen(url, name) {
+        // Ndalohet lojtari preview
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        videoPreview.pause();
+
+        fullscreenContainer.classList.remove('hidden');
+        
+        // Luhet në lojtarin fullscreen
+        loadChannel(url, videoFullscreen, name);
+        
+        // Kërkon Fullscreen nga shfletuesi
+        if (fullscreenContainer.requestFullscreen) {
+            fullscreenContainer.requestFullscreen();
+        } else if (fullscreenContainer.webkitRequestFullscreen) { /* Safari */
+            fullscreenContainer.webkitRequestFullscreen();
+        } else if (fullscreenContainer.msRequestFullscreen) { /* IE11 */
+            fullscreenContainer.msRequestFullscreen();
+        }
+    }
+
+    /**
+     * Del nga modaliteti fullscreen
+     */
+    function exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { /* Safari */
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE11 */
+            document.msExitFullscreen();
         }
 
-        // Back button
-        document.getElementById('backToCategories').addEventListener('click', () => {
-            channelsView.classList.remove('active');
-            categoriesView.style.display = 'block';
-        });
+        // Shkatërron lojtarin fullscreen
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        videoFullscreen.pause();
+        videoFullscreen.removeAttribute('src');
+        videoFullscreen.load();
 
-        // Keyboard controls
-        document.addEventListener('keydown', (e) => {
-            if (playerView.classList.contains('active')) {
-                if (e.key === 'Escape') {
-                    if (overlayMenu.classList.contains('active')) {
-                        overlayMenu.classList.remove('active');
-                    } else {
-                        playerView.classList.remove('active');
-                        channelsView.classList.add('active');
-                        if (hls) {
-                            hls.destroy();
-                            hls = null;
-                        }
-                        videoPlayer.src = '';
-                    }
-                } else if (e.key === 'Enter' || e.key === ' ') {
-                    if (!videoPlayer.paused && !videoPlayer.ended) {
-                        e.preventDefault();
-                        overlayMenu.classList.toggle('active');
-                    }
-                } else if (e.key === 'ArrowRight') {
-                    const nextIndex = (currentChannelIndex + 1) % channels[currentCategory].length;
-                    const nextChannel = channels[currentCategory][nextIndex];
-                    if (nextChannel.url !== '#') {
-                        currentChannelIndex = nextIndex;
-                        currentChannelSpan.textContent = nextChannel.name;
-                        loadStream(nextChannel.url);
-                        updateOverlayChannels();
-                    }
-                } else if (e.key === 'ArrowLeft') {
-                    const prevIndex = currentChannelIndex - 1 < 0 ? channels[currentCategory].length - 1 : currentChannelIndex - 1;
-                    const prevChannel = channels[currentCategory][prevIndex];
-                    if (prevChannel.url !== '#') {
-                        currentChannelIndex = prevIndex;
-                        currentChannelSpan.textContent = prevChannel.name;
-                        loadStream(prevChannel.url);
-                        updateOverlayChannels();
-                    }
+        fullscreenContainer.classList.add('hidden');
+        
+        // Kthehet te lojtari preview me kanalin e ri (ose kanalin e fundit të luajtur)
+        const activeChannel = document.querySelector('.channel-item.active');
+        if (activeChannel) {
+            loadChannel(activeChannel.dataset.url, videoPreview, activeChannel.dataset.name);
+            activeChannel.focus(); // Rikthen fokusin te kanali i zgjedhur
+        } else {
+            // Kthehet në ekranin kryesor nëse nuk ka kanal aktiv
+            goToCategoryScreen(); 
+        }
+    }
+
+    /**
+     * Ndërton kartat e kategorive.
+     */
+    function renderCategoryCards() {
+        categoryCardsContainer.innerHTML = ''; 
+        const categories = Object.keys(channels);
+
+        categories.forEach(category => {
+            const card = document.createElement('div');
+            card.className = 'category-card interactive-item bg-gray-800 p-8 rounded-2xl shadow-xl hover:bg-gray-700 text-center font-bold text-3xl h-48 flex items-center justify-center';
+            card.textContent = category;
+            card.setAttribute('tabindex', '0'); // Për fokusin e telekomandës
+            
+            // Menaxhimi i klikimit (Enter me telekomandë ose Click me mouse)
+            card.addEventListener('click', () => {
+                goToChannelsScreen(category);
+            });
+            
+            card.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    goToChannelsScreen(category);
                 }
-            } else if (channelsView.classList.contains('active')) {
-                if (e.key === 'Escape') {
-                    channelsView.classList.remove('active');
-                    categoriesView.style.display = 'block';
+            });
+
+            categoryCardsContainer.appendChild(card);
+        });
+        
+        // Fokusimi fillestar te karta e parë
+        setTimeout(() => {
+            const firstCard = categoryCardsContainer.querySelector('.category-card');
+            if (firstCard) {
+                firstCard.focus();
+            }
+        }, 300);
+    }
+    
+    /**
+     * Ndërton listën e kanaleve për kategorinë aktuale.
+     */
+    function renderChannels() {
+        const channelList = channels[currentCategory] || [];
+        channelListContainer.innerHTML = ''; 
+        
+        channelList.forEach((channel, index) => {
+            const channelItem = document.createElement('div');
+            channelItem.className = 'channel-item interactive-item flex items-center p-3 rounded-lg hover:bg-gray-700/80';
+            channelItem.setAttribute('tabindex', '0'); 
+            channelItem.setAttribute('data-url', channel.url);
+            channelItem.setAttribute('data-name', channel.name);
+            
+            const icon = document.createElement('div');
+            icon.className = 'w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0';
+            icon.textContent = channel.name.charAt(0);
+            
+            const nameElement = document.createElement('span');
+            nameElement.className = 'text-base font-medium truncate';
+            nameElement.textContent = channel.name;
+
+            channelItem.appendChild(icon);
+            channelItem.appendChild(nameElement);
+
+            // Zgjedhja e kanalit (Luhet menjëherë në Fullscreen)
+            channelItem.addEventListener('click', () => {
+                document.querySelectorAll('.channel-item').forEach(item => item.classList.remove('active'));
+                channelItem.classList.add('active');
+                currentChannelInfo.textContent = channel.name;
+                // Nis luajtjen në Fullscreen
+                enterFullscreen(channel.url, channel.name);
+            });
+            
+            // Për Telecommandën (Enter)
+            channelItem.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    channelItem.click();
                 }
+            });
+
+            channelListContainer.appendChild(channelItem);
+        });
+    }
+
+    // Inicializimi i aplikacionit
+    window.onload = function() {
+        renderCategoryCards();
+        
+        // Kthehu butoni
+        backButton.addEventListener('click', goToCategoryScreen);
+        backButton.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                goToCategoryScreen();
             }
         });
-    </script>
+
+        // Dëgjuesi për daljen nga fullscreen (me butonin 'Back' ose 'Esc' të telekomandës)
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                // Nëse jemi duke dalë nga fullscreen, kthehemi në ekranin e kanaleve
+                exitFullscreen();
+            }
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+             if (!document.webkitIsFullScreen) { exitFullscreen(); }
+        });
+        document.addEventListener('msfullscreenchange', () => {
+            if (!document.msFullscreenElement) { exitFullscreen(); }
+        });
+        
+    };
+
+    // Vendosja e nivelit të regjistrimit për HLS.js
+    if (Hls.isSupported()) {
+        Hls.DefaultConfig.debug = true; 
+    }
+
+</script>
+
 </body>
 </html>
+
