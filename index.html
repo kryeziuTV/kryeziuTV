@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8" />
-<title>TV App UI - Versioni 16:9 (6 Kanale, Pa EPG) - V27</title>
+<title>TV App UI - Versioni 16:9 (6 Kanale, Pa EPG) - V28 (Shpejtësi/Zë)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -665,7 +665,14 @@ function openPlayerForChannel(ch, isSwitching = false){
     if(hls){ try{ hls.destroy(); }catch(e){} hls = null; }
     
     if(Hls && Hls.isSupported()){
-        hls = new Hls({ maxBufferLength: 10 }); 
+        // **NDRYSHUAR PËR SHPEJTËSI MAKSIMALE**
+        hls = new Hls({ 
+            maxBufferLength: 3, // Buffer më i vogël për start më të shpejtë
+            maxMaxBufferLength: 8, // Buffer-i maksimal nuk rritet shumë
+            liveSyncDurationCount: 2, // Ruaj sinkronizim të shpejtë
+            enableWorker: true, // Përdor punëtorë sfondi për dekodim më efikas
+            // startLevel: 0, // Sigurohuni që të filloni me cilësinë më të lartë menjëherë
+        }); 
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, function(){ 
@@ -685,7 +692,7 @@ function openPlayerForChannel(ch, isSwitching = false){
     video.onplaying = () => { updateLoadingState('hidden'); };
     video.onerror = () => { updateLoadingState('error', ch.name); } 
 
-    // **SHTUAR:** Sigurohu që zëri është në maksimum pas hapjes
+    // **NDRYSHUAR:** Sigurohu që zëri është në maksimum pas hapjes (Unmute)
     video.volume = 1; 
     
     try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){} 
