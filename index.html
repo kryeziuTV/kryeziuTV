@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8" />
-<title>TV App UI - Versioni 16:9 (Pa EPG) - V25</title>
+<title>TV App UI - Versioni 16:9 (6 Kanale, Pa EPG) - V26</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -79,7 +79,7 @@
         color: rgba(255, 255, 255, 0.8); 
     } 
 
-    /* --- KONTEJNERI KRYESOR PĖR QENDRĖZIM (Adaptive Screen Fix) --- */
+    /* --- KONTEJNERI KRYESOR PĖR QENDRĖZIM --- */
     #mainContent {
         display: flex;
         flex-direction: column;
@@ -87,8 +87,8 @@
         padding: 40px; 
         padding-top: 20px; 
         margin-top: 20px; 
-        width: 100%; /* Përditësuar */
-        max-width: 100%; /* Përditësuar */
+        width: 100%; 
+        max-width: 100%; 
         box-sizing: border-box;
     } 
 
@@ -141,11 +141,12 @@
         width: 30px; 
     }
 
+    /* Rregullimi i Gridit - 6 Kanale Horizontalisht */
     .grid { 
-        grid-template-columns: repeat(8, 160px); 
+        grid-template-columns: repeat(6, 160px); /* KRYESOR: Zëvendësuar 8 me 6 */
         gap: 25px 20px; 
         display:grid; 
-        justify-content: center; /* Përditësuar (Adaptive Screen Fix) */
+        justify-content: center; 
         width: 100%; 
     } 
 
@@ -154,7 +155,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0; /* Hequr gap pasi EPG u largua */
+        gap: 0; 
         position: relative;
     }
 
@@ -196,8 +197,7 @@
         transform: none; 
     }
     
-    /* --- EPG INFO BAR (LARGOHET) --- */
-    .epg-info { display: none; }
+    /* Hequr: Stilimi i EPG-së (epg-info) */
 
 
     /* --- PLAYER CONTAINER --- */
@@ -251,16 +251,7 @@
         color: #fff;
         line-height: 1;
     } 
-    .epg-now-playing {
-        font-size: 1.1em;
-        color: #ccc;
-        font-weight: 500;
-        margin-top: 5px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-    }
+    /* EPG info u hoq plotësisht nga HTML */
 
 
     /* Loading/Error Overlay */
@@ -374,7 +365,6 @@
         <video id="tvplayer" autoplay playsinline muted></video>
         <div id="infoBar">
             <div class="channel-title"></div>
-            <div class="epg-now-playing"></div>
         </div> 
         <div id="channelMenu"></div>
     </div> 
@@ -383,7 +373,7 @@
 <script>
 // --- KONFIGURIMI I APLIKACIONIT ---
 const CHANNELS_JSON_URL = "channels.json"; 
-const GRID_COLS = 8; 
+const GRID_COLS = 6; /* KRYESOR: Ndryshuar nga 8 në 6 */
 
 // --- Variablat globale ---
 let allChannelsData = {}; 
@@ -412,7 +402,6 @@ let isInitializing = true;
 async function initializeApp() {
     try {
         await fetchChannelData();
-        // Hequr: fetchEPGData();
 
         // 3. Ruajtja e Kategorisë dhe Kanalit të Fundit
         currentCategory = localStorage.getItem('lastCategory') || categories[0] || 'LIVE TV';
@@ -466,8 +455,6 @@ async function fetchChannelData() {
     });
 }
 
-// Hequr: Funksionet e EPG (parseXMLTVDate, fetchEPGData, processEPGResult, getEPGNow)
-
 // --- RENDERIMI I UI ---
 function renderCategories(){
     catWrap.innerHTML = '';
@@ -516,12 +503,11 @@ function loadCategory(cat){
         logo.alt = ch.name;
         box.appendChild(logo);
         
-        // Hequr: Elementi i EPG-së
+        // Hequr: Elementi vizual i EPG-së nga kanalet
         
         box.onfocus = ()=> { 
             focusedArea = 'grid'; 
             gridFocus = idx;
-            // Hequr: Shfaq EPG-në kur fokusohet
         } 
         
         box.onclick = ()=> openPlayerForChannel(ch);
@@ -533,6 +519,7 @@ function loadCategory(cat){
     catFocus = categories.indexOf(cat) >= 0 ? categories.indexOf(cat) : 0;
     
     if (isInitializing && focusedArea === 'grid') {
+        // Lë gridFocus siç është, pasi u llogarit më lart
     } else {
          gridFocus = 0; 
          focusedArea = 'cats'; 
@@ -544,7 +531,6 @@ function loadCategory(cat){
 function focusCurrent(){
     if (currentFocusedElement) {
         currentFocusedElement.classList.remove('focused');
-        // Hequr: Logjika e fshirjes së EPG-së së vjetër
     }
 
     let targetElement = null;
@@ -562,8 +548,6 @@ function focusCurrent(){
         if (wraps[gridFocus]) {
             targetElement = wraps[gridFocus].querySelector('.channel');
             targetElement.classList.add('focused');
-            
-            // Hequr: Simulo fokusin per te shfaqur EPG
         }
     }
     
@@ -576,13 +560,11 @@ function focusCurrent(){
 function showInfoBar(ch) {
     const infoBar = document.getElementById('infoBar');
     const title = infoBar.querySelector('.channel-title');
-    const epgDisplay = infoBar.querySelector('.epg-now-playing');
 
     if (!infoBar || !title) return; 
     
-    // Për shkak se EPG u largua, shfaq vetëm emrin e kanalit dhe numrin.
+    // KRYESOR: Shfaq vetëm emrin dhe numrin e kanalit
     title.textContent = `${ch.number || currentChannelIndex + 1} | ${ch.name}`;
-    epgDisplay.textContent = 'Programi i Tanishëm: Nuk ka të dhëna EPG'; 
 
     infoBar.classList.add('visible'); 
     
@@ -644,7 +626,6 @@ function openPlayerForChannel(ch, isSwitching = false){
     const channelMenu = document.getElementById('channelMenu');
     
     if (!isSwitching) {
-        // Rregulluar: Hequr body.style.padding = '0'
         document.body.style.overflow = 'hidden';
         document.getElementById('mainContent').style.display = 'none'; 
         history.pushState({player:true}, 'player');
@@ -739,8 +720,8 @@ document.addEventListener('keydown', (e)=>{
             const infoBar = document.getElementById('infoBar');
             const title = infoBar.querySelector('.channel-title');
 
+            // KRYESOR: Shfaq vetëm numrin e shkruar
             title.textContent = `Kanali: ${digitBuffer}`;
-            document.querySelector('.epg-now-playing').textContent = ''; // Fshi EPG info per numrat
             infoBar.classList.add('visible'); 
 
             if (infoBarTimer) clearTimeout(infoBarTimer);
@@ -1019,7 +1000,6 @@ function updateLoadingState(state, channelName = null) {
 } 
 
 function closePlayer(){
-    // Rregulluar: Hequr body.style.padding = '40px'
     document.body.style.overflow = 'auto'; 
     document.getElementById('mainContent').style.display = 'flex'; 
     isMenuVisible = false; 
@@ -1073,7 +1053,7 @@ window.addEventListener('keydown', (e)=>{
     if(e.key === 'Escape' || e.key === 'Backspace'){
         if(playerContainer.style.display === 'flex' && !isMenuVisible){
             if(window.history.state && window.history.state.player){
-                 // historia mbyllet ne closePlayer()
+                 history.back(); 
             } else {
                 closePlayer();
             }
