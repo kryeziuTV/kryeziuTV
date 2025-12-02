@@ -2,19 +2,27 @@
 <html>
 <head>
 <meta charset="UTF-8" />
-<title>TV App UI - Versioni 16:9 (Me EPG, Lokale) - V24</title>
+<title>TV App UI - Versioni 16:9 (Pa EPG) - V25</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 
 <style>
     /* --- STILIMET KRYESORE --- */
+    html, body {
+        height: 100%; 
+        min-height: 100vh;
+    }
+
     body { 
         background: #1e1e1e; 
         font-family:'Rubik',sans-serif; 
         color:#fff; 
         margin:0; 
         overflow-x: hidden;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
     } 
     
     /* SFONDI STATIK I IMZHIT */
@@ -43,7 +51,6 @@
         text-align: right; 
         z-index: 10;
         pointer-events: none; 
-        /* NDRYSHIM: Sfondo transparent/blur per lexueshmeri */
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(5px);
         border-radius: 14px;
@@ -72,23 +79,24 @@
         color: rgba(255, 255, 255, 0.8); 
     } 
 
-    /* --- FUNDI I STILIMIT TĖ WIDGET-IT --- */
-
-    /* KONTEJNERI KRYESOR PĖR QENDRĖZIM */
+    /* --- KONTEJNERI KRYESOR PĖR QENDRĖZIM (Adaptive Screen Fix) --- */
     #mainContent {
         display: flex;
         flex-direction: column;
         align-items: center; 
         padding: 40px; 
+        padding-top: 20px; 
         margin-top: 20px; 
+        width: 100%; /* Përditësuar */
+        max-width: 100%; /* Përditësuar */
+        box-sizing: border-box;
     } 
 
     /* KATEGORITĖ & GRIDI I KANALEVE */
     .categories { 
         display:flex; 
         gap: 20px; 
-        /* NDRYSHIM: Rritur hapesira per me shume fokus */
-        margin-bottom: 60px; 
+        margin-bottom: 40px; 
         justify-content: center; 
         width: 100%; 
         padding-top: 0; 
@@ -134,10 +142,11 @@
     }
 
     .grid { 
-        /* NDRYSHIM: Rritur ne 8 kolona per dizajnin e ri 16:9 */
         grid-template-columns: repeat(8, 160px); 
-        gap: 25px 20px; /* Ndarje me e madhe ne lartesi per EPG */
+        gap: 25px 20px; 
         display:grid; 
+        justify-content: center; /* Përditësuar (Adaptive Screen Fix) */
+        width: 100%; 
     } 
 
     /* --- STILIMI I KANALIT (16:9) --- */
@@ -145,15 +154,14 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 10px; /* Hapesira midis kanalit dhe EPG */
+        gap: 0; /* Hequr gap pasi EPG u largua */
         position: relative;
     }
 
     .channel { 
-        /* NDRYSHIM: Përmasat 16:9 (160x90) */
         width: 160px; 
         height: 90px; 
-        background: rgba(0, 0, 0, 0.4); /* Sfond me i thelle */
+        background: rgba(0, 0, 0, 0.4); 
         border-radius: 8px; 
         box-shadow: 0 4px 15px rgba(0,0,0,.4); 
         display:flex; 
@@ -168,16 +176,12 @@
     }
 
     .channel:focus, .channel.focused { 
-        /* NDRYSHIM: Scale i përmbajtur */
         transform: scale(1.1); 
-        border: 3px solid #6246B8; /* Borderi fokusues */
+        border: 3px solid #6246B8; 
         box-shadow: 0 8px 30px rgba(98, 70, 184, 0.6); 
         outline:none; 
     }
     .channel:active { transform:scale(0.98); } 
-
-    /* Vija e bardhë në fund (e larguar pasi kemi EPG) */
-    .channel-indicator { display: none; } 
 
     .channel img { 
         max-width: 90%; 
@@ -192,44 +196,11 @@
         transform: none; 
     }
     
-    /* --- STILIMI I EPG INFO BAR --- */
-    .epg-info {
-        position: absolute;
-        top: 100px; /* Nën kanalin 16:9 (90px) + hapësira */
-        width: 100%;
-        background: rgba(0, 0, 0, 0.8); /* Sfond pak me i fortë */
-        color: #fff;
-        padding: 8px;
-        border-radius: 4px;
-        font-size: 0.85em;
-        line-height: 1.3;
-        text-align: left;
-        opacity: 0;
-        transform: translateY(10px);
-        transition: opacity 0.2s, transform 0.2s;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-        pointer-events: none;
-        z-index: 1; 
-        min-height: 40px; 
-    }
+    /* --- EPG INFO BAR (LARGOHET) --- */
+    .epg-info { display: none; }
 
-    .channel:focus + .epg-info, .channel.focused + .epg-info {
-        opacity: 1;
-        transform: translateY(0);
-    }
 
-    .epg-info .program-name {
-        font-weight: 700;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .epg-info .program-time {
-        font-size: 0.9em;
-        color: #aaa;
-    }
-
-    /* --- PLAYER CONTAINER --- (Mbeten pa ndryshime) */
+    /* --- PLAYER CONTAINER --- */
     #playerContainer { 
         position:fixed; 
         inset:0; 
@@ -248,7 +219,7 @@
         pointer-events:none; 
     } 
     
-    /* Info Bar (pa ndryshime) */
+    /* Info Bar */
     #infoBar {
         position: absolute;
         bottom: 0;
@@ -292,7 +263,7 @@
     }
 
 
-    /* Loading/Error Overlay (pa ndryshime) */
+    /* Loading/Error Overlay */
     #loadingOverlay {
         position: absolute;
         inset: 0;
@@ -337,7 +308,7 @@
         display: none; 
         z-index: 100001; 
         transform: translateX(-100%); 
-        transition: transform 0.3s ease-out; /* Shtuar transition */
+        transition: transform 0.3s ease-out; 
     } 
 
     #channelMenu.active {
@@ -409,18 +380,15 @@
     </div> 
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/xml2js@0.6.2/dist/xml2js.min.js"></script>
 <script>
 // --- KONFIGURIMI I APLIKACIONIT ---
-const EPG_URL = "https://epghub.xyz/epg/EPG-AL.xml";
 const CHANNELS_JSON_URL = "channels.json"; 
-const GRID_COLS = 8; // Kemi 8 kolona per dizajnin e ri 16:9
+const GRID_COLS = 8; 
 
 // --- Variablat globale ---
 let allChannelsData = {}; 
 let categories = []; 
 let allChannelsList = []; 
-let epgData = {}; 
 let hls = null;
 
 // --- DOM refs dhe State ---
@@ -438,33 +406,13 @@ let currentChannelIndex = 0;
 let infoBarTimer = null; 
 let digitBuffer = ''; 
 let digitTimer = null; 
-let isInitializing = true; // Flage per fokusin inicial
-
-// --- NDYRSHIM I RI: FUNKSIONI PËR ANALIZIMIN E DATËS SË XMLTV ---
-function parseXMLTVDate(dateString) {
-    if (!dateString || typeof dateString !== 'string') return null;
-    
-    // Formati: YYYYMMDDHHMMSS +TZ
-    const year = dateString.substring(0, 4);
-    const month = dateString.substring(4, 6);
-    const day = dateString.substring(6, 8);
-    const hour = dateString.substring(8, 10);
-    const minute = dateString.substring(10, 12);
-    const second = dateString.substring(12, 14);
-    const timezone = dateString.substring(14); // P.sh., +0100
-
-    // Krijon formatin ISO 8601 me Z-timezone per Date object
-    const isoString = `${year}-${month}-${day}T${hour}:${minute}:${second}${timezone.substring(0, 3)}:${timezone.substring(3, 5)}`;
-    
-    return new Date(isoString);
-}
-
+let isInitializing = true; 
 
 // --- FILLESA DHE MIGRIMI I TË DHËNAVE ---
 async function initializeApp() {
     try {
         await fetchChannelData();
-        await fetchEPGData();
+        // Hequr: fetchEPGData();
 
         // 3. Ruajtja e Kategorisë dhe Kanalit të Fundit
         currentCategory = localStorage.getItem('lastCategory') || categories[0] || 'LIVE TV';
@@ -475,15 +423,13 @@ async function initializeApp() {
             const lastChannel = allChannelsList[currentChannelIndex];
             currentCategory = lastChannel.category;
             const categoryChannels = allChannelsData[currentCategory];
-            // Gjej pozicionin e fokusit te kanalit ne gridin e kategorise
             gridFocus = categoryChannels.findIndex(ch => ch.fullIndex === currentChannelIndex);
             
-            // Nese ka kanal te ruajtur, fokuso ne grid, jo ne kategori
             focusedArea = 'grid'; 
         } else {
              currentChannelIndex = 0;
              gridFocus = 0;
-             focusedArea = 'cats'; // Fillo nga kategorite nese ska asnje kanal te luajtur
+             focusedArea = 'cats'; 
         }
 
         renderCategories();
@@ -520,76 +466,7 @@ async function fetchChannelData() {
     });
 }
 
-async function fetchEPGData() {
-    try {
-        // PER KUJDES: CORS mund te bllokoje kete kerkese nga disku lokal (file://)
-        // Per test: Perdorni nje web server lokal (si VS Code Live Server)
-        const response = await fetch(EPG_URL);
-        if (!response.ok) {
-            // Tentojme te marrim EPG-ne si text
-            const textResponse = await fetch(EPG_URL);
-            const xmlText = await textResponse.text();
-            if (!xmlText) throw new Error("EPG burimi ishte bosh.");
-            
-            const parser = new xml2js.Parser();
-            const result = await parser.parseStringPromise(xmlText);
-            processEPGResult(result);
-
-        } else {
-            // Nese merret si OK, marrim si text dhe procesojme
-            const xmlText = await response.text();
-            const parser = new xml2js.Parser();
-            const result = await parser.parseStringPromise(xmlText);
-            processEPGResult(result);
-        }
-        
-        console.log("EPG u ngarkua me sukses.");
-    } catch (error) {
-        console.error("Gabim në ngarkimin/analizimin e EPG-së:", error);
-        // EPG Data mund te mbetet bosh, aplikacioni do te funksionojë pa të
-    }
-}
-
-function processEPGResult(result) {
-    epgData = {};
-    if (result.tv && result.tv.programme) {
-        result.tv.programme.forEach(p => {
-            const channelId = p.$.channel;
-            if (!epgData[channelId]) {
-                epgData[channelId] = [];
-            }
-            // NDRYSHIM: Perdoret funksioni i ri per te analizuar datat
-            const startTime = parseXMLTVDate(p.$.start);
-            const stopTime = parseXMLTVDate(p.$.stop);
-            const title = p.title && p.title[0] ? (p.title[0]._ || p.title[0]) : 'Pa Titull';
-            
-            if (startTime && stopTime) {
-                epgData[channelId].push({ startTime, stopTime, title });
-            }
-        });
-    }
-}
-
-
-function getEPGNow(channelId) {
-    const now = new Date();
-    const programs = epgData[channelId] || [];
-    
-    // Sortimi per siguri, edhe pse XML-ja duhet te jete e sortuar
-    programs.sort((a, b) => a.startTime - b.startTime);
-    
-    const currentProgram = programs.find(p => p.startTime <= now && p.stopTime > now);
-    
-    if (currentProgram) {
-        const start = currentProgram.startTime.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-        const stop = currentProgram.stopTime.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-        return {
-            name: currentProgram.title,
-            time: `${start} - ${stop}`
-        };
-    }
-    return { name: "Nuk ka Program TV (EPG)", time: "" };
-}
+// Hequr: Funksionet e EPG (parseXMLTVDate, fetchEPGData, processEPGResult, getEPGNow)
 
 // --- RENDERIMI I UI ---
 function renderCategories(){
@@ -615,7 +492,6 @@ function loadCategory(cat){
     currentCategory = cat;
     localStorage.setItem('lastCategory', cat); 
     
-    // Përditëso klasën 'focused' te kategoritë
     catWrap.querySelectorAll('.cat-btn').forEach(btn => {
         btn.classList.toggle('focused', btn.getAttribute('data-cat') === cat);
     });
@@ -632,7 +508,6 @@ function loadCategory(cat){
         box.tabIndex = 0;
         box.setAttribute('data-idx', idx);
         
-        // Për të ndihmuar fokusimin inicial
         ch.gridIndex = idx;
         wrap.channelData = ch;
 
@@ -641,38 +516,26 @@ function loadCategory(cat){
         logo.alt = ch.name;
         box.appendChild(logo);
         
-        // Elementi i EPG-së
-        const epgInfo = document.createElement('div');
-        epgInfo.className = 'epg-info';
+        // Hequr: Elementi i EPG-së
         
         box.onfocus = ()=> { 
             focusedArea = 'grid'; 
             gridFocus = idx;
-            // Shfaq EPG-në kur fokusohet
-            const epg = getEPGNow(ch.channelId);
-            epgInfo.innerHTML = `<div class="program-name">${epg.name}</div><div class="program-time">${epg.time}</div>`;
+            // Hequr: Shfaq EPG-në kur fokusohet
         } 
         
-        box.onblur = ()=> {
-            // Fshij EPG-në kur fokusi humbet
-            epgInfo.innerHTML = ''; 
-        }
-
         box.onclick = ()=> openPlayerForChannel(ch);
         
         wrap.appendChild(box);
-        wrap.appendChild(epgInfo);
         grid.appendChild(wrap);
     });
     
     catFocus = categories.indexOf(cat) >= 0 ? categories.indexOf(cat) : 0;
     
-    // Nese po inicializohet dhe ka kanal te ruajtur, vendos fokusin ne grid
     if (isInitializing && focusedArea === 'grid') {
-         // FocusCurrent do ta beje fokusimin e duhur
     } else {
-         gridFocus = 0; // Perndryshe fillo nga kanali i pare
-         focusedArea = 'cats'; // Fillo ne kategori
+         gridFocus = 0; 
+         focusedArea = 'cats'; 
     }
     
     focusCurrent();
@@ -680,16 +543,12 @@ function loadCategory(cat){
 
 function focusCurrent(){
     if (currentFocusedElement) {
-        // Hiq focused nga elementi i vjetër
         currentFocusedElement.classList.remove('focused');
-        // Sigurohu qe EPG-ja e vjetër të fshihet
-        const epgInfoOld = currentFocusedElement.parentElement.querySelector('.epg-info');
-        if (epgInfoOld) epgInfoOld.innerHTML = '';
+        // Hequr: Logjika e fshirjes së EPG-së së vjetër
     }
 
     let targetElement = null;
     
-    // Hiq focused nga kategoritë
     catWrap.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('focused'));
 
     if(focusedArea === 'cats'){
@@ -704,13 +563,7 @@ function focusCurrent(){
             targetElement = wraps[gridFocus].querySelector('.channel');
             targetElement.classList.add('focused');
             
-            // Simulo fokusin per te shfaqur EPG (që normalisht ndodh në box.onfocus)
-            const focusedChannel = allChannelsList.find(ch => ch.category === currentCategory && ch.fullIndex === wraps[gridFocus].channelData.fullIndex);
-            if (focusedChannel) {
-                const epg = getEPGNow(focusedChannel.channelId);
-                const epgInfoNew = targetElement.parentElement.querySelector('.epg-info');
-                epgInfoNew.innerHTML = `<div class="program-name">${epg.name}</div><div class="program-time">${epg.time}</div>`;
-            }
+            // Hequr: Simulo fokusin per te shfaqur EPG
         }
     }
     
@@ -720,8 +573,6 @@ function focusCurrent(){
     }
 } 
 
-// ... (Pjesa e player-it, info bar, dhe logjika e menysë anësore mbeten pak a shumë siç ishin) ...
-
 function showInfoBar(ch) {
     const infoBar = document.getElementById('infoBar');
     const title = infoBar.querySelector('.channel-title');
@@ -729,10 +580,9 @@ function showInfoBar(ch) {
 
     if (!infoBar || !title) return; 
     
-    const epg = getEPGNow(ch.channelId);
-
+    // Për shkak se EPG u largua, shfaq vetëm emrin e kanalit dhe numrin.
     title.textContent = `${ch.number || currentChannelIndex + 1} | ${ch.name}`;
-    epgDisplay.textContent = epg.time ? `${epg.time} - ${epg.name}` : epg.name;
+    epgDisplay.textContent = 'Programi i Tanishëm: Nuk ka të dhëna EPG'; 
 
     infoBar.classList.add('visible'); 
     
@@ -794,7 +644,7 @@ function openPlayerForChannel(ch, isSwitching = false){
     const channelMenu = document.getElementById('channelMenu');
     
     if (!isSwitching) {
-        document.body.style.padding = '0';
+        // Rregulluar: Hequr body.style.padding = '0'
         document.body.style.overflow = 'hidden';
         document.getElementById('mainContent').style.display = 'none'; 
         history.pushState({player:true}, 'player');
@@ -865,11 +715,11 @@ function openPlayerForChannel(ch, isSwitching = false){
     try{ req && req.call(video).catch(()=>{}); }catch(e){}
 } 
 
-// --- LOGJIKA E NAVIGIMIT (TANI ME FUNKSIONALITET TË PLOTË NË GRID) ---
+// --- LOGJIKA E NAVIGIMIT ---
 document.addEventListener('keydown', (e)=>{
     
     if(playerContainer.style.display === 'flex'){
-        // ... (Logjika e Playerit dhe Menysë Anësore - pa ndryshime thelbësore) ...
+        
         const channelMenu = document.getElementById('channelMenu');
         const menuItems = channelMenu ? channelMenu.querySelectorAll('.menu-channel-item') : [];
         const MAX_CHANNEL_INDEX = allChannelsList.length - 1; 
@@ -890,6 +740,7 @@ document.addEventListener('keydown', (e)=>{
             const title = infoBar.querySelector('.channel-title');
 
             title.textContent = `Kanali: ${digitBuffer}`;
+            document.querySelector('.epg-now-playing').textContent = ''; // Fshi EPG info per numrat
             infoBar.classList.add('visible'); 
 
             if (infoBarTimer) clearTimeout(infoBarTimer);
@@ -1002,22 +853,18 @@ document.addEventListener('keydown', (e)=>{
     else if(e.key === 'ArrowDown'){
         if(focusedArea === 'cats'){
             focusedArea = 'grid';
-            // Përditëso gridFocus bazuar në pozicionin e kategorisë
             gridFocus = Math.min(catFocus, gridItems.length - 1); 
-            if (gridFocus < 0) gridFocus = 0; // Nëse kategoria është bosh
+            if (gridFocus < 0) gridFocus = 0; 
         } else {
             const newIndex = gridFocus + GRID_COLS;
             if (newIndex < gridItems.length) {
                 gridFocus = newIndex;
-            } else {
-                // Opsional: Kthehu lart ose mos bëj asgjë
-            }
+            } 
         }
     }
     else if(e.key === 'ArrowUp'){
         if(focusedArea === 'grid'){
             if(gridFocus < GRID_COLS){ 
-                // Kthehu tek kategoritë
                 focusedArea = 'cats';
                 catFocus = Math.min(gridFocus, categories.length - 1);
             } else {
@@ -1033,11 +880,9 @@ document.addEventListener('keydown', (e)=>{
     if(e.key === 'Enter'){
         if(focusedArea === 'cats'){
             loadCategory(categories[catFocus]);
-            // Vendos fokusin në elementin e parë të grid-it pas ngarkimit të kategorisë
             focusedArea = 'grid'; 
             gridFocus = 0; 
         } else {
-            // Shtyp kanalin e fokusuar
             grid.querySelectorAll('.channel-wrap')[gridFocus]?.querySelector('.channel').click();
         }
     }
@@ -1054,7 +899,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     setInterval(loadSuharekeWeather, 600000); 
 });
 
-// ... (Pjesët e tjera mbeten siç ishin) ...
 function updateClock() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -1175,7 +1019,7 @@ function updateLoadingState(state, channelName = null) {
 } 
 
 function closePlayer(){
-    document.body.style.padding = '40px';
+    // Rregulluar: Hequr body.style.padding = '40px'
     document.body.style.overflow = 'auto'; 
     document.getElementById('mainContent').style.display = 'flex'; 
     isMenuVisible = false; 
