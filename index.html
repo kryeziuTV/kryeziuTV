@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>TV App UI - Versioni 16:9 (Me EPG, Lokale) - V23</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+
+<style>
+    /* --- STILIMET KRYESORE --- */
+    body { 
+        background: #1e1e1e; 
+        font-family:'Rubik',sans-serif; 
+        color:#fff; 
+        margin:0; 
+        overflow-x: hidden;
+    } 
+    
+    /* SFONDI STATIK I IMZHIT */
+    #background-image {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%; 
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        z-index: -2; 
+        object-fit: cover;
+        background-image: url("https://i.imgur.com/yeiw0tZ.jpeg");
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.6); 
+    }
+
+    /* --- WIDGET I ORES DHE MOTIT (POSHTE NE TE DJATHTE) --- */
+    #headerWidget {
+        position: fixed;
+        bottom: 20px; 
+        right: 20px; 
+        color: #fff;
+        text-align: right; 
+        z-index: 10;
+        pointer-events: none; 
+        /* NDRYSHIM: Sfondo transparent/blur per lexueshmeri */
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(5px);
+        border-radius: 14px;
+        padding: 10px 20px;
+    } 
+
+    #weatherSummary {
+        font-size: 1.2em; 
+        font-weight: 500; 
+        color: rgba(255, 255, 255, 0.9); 
+        margin-bottom: 5px; 
+    }
+
+    #currentTime {
+        font-size: 2.5em; 
+        font-weight: 700; 
+        line-height: 1;
+        margin: 0;
+    }
+
+    #currentDate {
+        font-size: 0.9em; 
+        font-weight: 400; 
+        margin-top: 5px; 
+        line-height: 1.2;
+        color: rgba(255, 255, 255, 0.8); 
+    } 
+
+    /* --- FUNDI I STILIMIT TE WIDGET-IT --- */
+
+    /* KONTEJNERI KRYESOR PER QENDREZIM */
+    #mainContent {
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        padding: 40px; 
+        margin-top: 20px; 
+    } 
+
+    /* KATEGORITE & GRIDI I KANALEVE */
+    .categories { 
+        display:flex; 
+        gap: 20px; 
+        /* NDRYSHIM: Rritur hapesira per me shume fokus */
+        margin-bottom: 60px; 
+        justify-content: center; 
+        width: 100%; 
+        padding-top: 0; 
+    } 
+
+    .cat-btn { 
+        background: none; 
+        color:#fff; 
+        padding:15px 28px; 
+        font-size: 1.3em; 
+        font-weight: 600; 
+        cursor:pointer; 
+        transition: transform .15s ease-out;
+        border: none; 
+        border-radius: 0;
+        position: relative; 
+        margin: 0; 
+        outline: none;
+    }
+
+    .cat-btn::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 4px;
+        background-color: #fff;
+        border-radius: 2px;
+        transition: width 0.1s ease-out;
+    }
+
+    .cat-btn:focus, .cat-btn.focused { 
+        background: none; 
+        color: #fff;
+        transform: scale(1.05); 
+        box-shadow: none; 
+    }
+    
+    .cat-btn:focus::after, .cat-btn.focused::after {
+        width: 30px; 
+    }
+
+    .grid { 
+        /* NDRYSHIM: Rritur ne 8 kolona per 16:9 channels */
+        grid-template-columns: repeat(8, 160px); 
+        gap: 25px 20px; /* Ndarje me e madhe ne lartesi per EPG */
+        display:grid; 
+    } 
+
+    /* --- STILIMI I KANALIT (16:9) --- */
+    .channel-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px; /* Hapesira midis kanalit dhe EPG */
+        position: relative;
+    }
+
+    .channel { 
+        /* NDRYSHIM: Përmasat 16:9 (160x90) */
+        width: 160px; 
+        height: 90px; 
+        background: rgba(0, 0, 0, 0.4); /* Sfond me i thelle */
+        border-radius: 8px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,.4); 
+        display:flex; 
+        justify-content:center; 
+        align-items:center; 
+        cursor:pointer; 
+        transition: transform .1s ease-out, box-shadow .1s ease-out; 
+        border: 3px solid transparent; 
+        overflow: hidden; 
+        padding: 5px; 
+        box-sizing: border-box;
+    }
+
+    .channel:focus, .channel.focused { 
+        /* NDRYSHIM: Scale i përmbajtur */
+        transform: scale(1.1); 
+        border: 3px solid #6246B8; /* Borderi fokusues */
+        box-shadow: 0 8px 30px rgba(98, 70, 184, 0.6); 
+        outline:none; 
+    }
+    .channel:active { transform:scale(0.98); } 
+
+    /* Vija e bardhë në fund (e larguar pasi kemi EPG) */
+    .channel-indicator { display: none; } 
+
+    .channel img { 
+        max-width: 90%; 
+        max-height: 90%; 
+        object-fit: contain; 
+        filter: saturate(1); 
+        transition: filter 0.1s, transform 0.1s; 
+    } 
+
+    .channel:focus img, .channel.focused img { 
+        filter: saturate(1.2); 
+        transform: none; 
+    }
+    
+    /* --- STILIMI I EPG INFO BAR --- */
+    .epg-info {
+        position: absolute;
+        top: 100px; /* Nën kanalin 16:9 (90px) + hapësira */
+        width: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        line-height: 1.3;
+        text-align: left;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.2s, transform 0.2s;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        z-index: 1; 
+        min-height: 40px; 
+    }
+
+    .channel:focus + .epg-info, .channel.focused + .epg-info {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .epg-info .program-name {
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .epg-info .program-time {
+        font-size: 0.9em;
+        color: #aaa;
+    }
+
+    /* --- PLAYER CONTAINER --- (Mbeten pa ndryshime) */
+    #playerContainer { 
+        position:fixed; 
+        inset:0; 
+        background:#000; 
+        display:none; 
+        z-index:99999; 
+        align-items:center; 
+        justify-content:center; 
+    }
+    #playerContainer video { 
+        width:100vw; 
+        height:100vh; 
+        object-fit:contain; 
+        outline:none; 
+        border:0; 
+        pointer-events:none; 
+    } 
+    
+    /* Info Bar (pa ndryshime) */
+    #infoBar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 80px; 
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0)); 
+        padding: 10px 40px 10px 40px; 
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(100%); 
+        transition: opacity 0.5s, transform 0.5s ease-out; 
+        z-index: 99999;
+        justify-content: center; 
+    } 
+
+    #infoBar.visible {
+        opacity: 1;
+        transform: translateY(0%);
+    } 
+
+    .channel-title {
+        font-size: 2.2em;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
+    } 
+    .epg-now-playing {
+        font-size: 1.1em;
+        color: #ccc;
+        font-weight: 500;
+        margin-top: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+
+    /* Loading/Error Overlay (pa ndryshime) */
+    #loadingOverlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none; 
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 100000; 
+    } 
+    #loadingOverlay .message {
+        font-size: 1.5em;
+        font-weight: 500;
+        color: #fff;
+        margin-top: 20px;
+    } 
+    .spinner {
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-top: 5px solid #6246B8;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    } 
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    } 
+
+    /* --- MENYJA ANESORE --- */
+    #channelMenu {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100vh; 
+        width: 350px; 
+        padding: 20px 0;
+        background: rgba(0, 0, 0, 0.95); 
+        border-right: 1px solid rgba(255, 255, 255, 0.1); 
+        overflow-y: auto; 
+        overflow-x: hidden;
+        display: none; 
+        z-index: 100001; 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease-out; /* Shtuar transition */
+    } 
+
+    #channelMenu.active {
+        transform: translateX(0);
+    }
+    
+    .menu-channel-item.focused {
+        background-color: rgba(65, 105, 225, 0.3); 
+        border-left-color: #4169e1; 
+        color: #fff;
+        transform: scale(1.03);
+        box-shadow: 
+            0 0 10px rgba(65, 105, 225, 0.3),
+            5px 0 15px rgba(0, 0, 0, 0.5); 
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    } 
+    
+    /* ... (Stilimet e tjera të Menusë Anësore mbeten siç ishin) ... */
+</style>
+</head>
+<body>
+    
+    <div id="background-image"></div>
+    
+    <div id="headerWidget">
+        <div id="timeDate">
+            <span id="weatherSummary"></span> 
+            <span id="currentTime">--:--</span>
+            <span id="currentDate">--/--</span>
+        </div> 
+    </div>
+    
+    <div id="mainContent">
+        <div class="categories" id="categories" role="toolbar" aria-label="Categories"></div>
+        <div class="grid" id="grid" role="grid"></div> 
+    </div> 
+
+    <div id="playerContainer">
+        <div id="loadingOverlay">
+            <div class="spinner"></div>
+            <div class="message">Po ngarkohet...</div>
+        </div> 
+
+        <div id="infoBar">
+            <div class="channel-title"></div>
+            <div class="epg-now-playing"></div>
+        </div> 
+    </div> 
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/xml2js@0.6.2/dist/xml2js.min.js"></script>
+<script>
+// --- KONFIGURIMI I APLIKACIONIT ---
+const EPG_URL = "https://epghub.xyz/epg/EPG-AL.xml";
+const CHANNELS_JSON_URL = "channels.json"; 
+const GRID_COLS = 8; // Kemi 8 kolona per dizajnin e ri 16:9
+
+// --- Variablat globale ---
+let allChannelsData = {}; // Të dhënat e kanaleve të marra nga JSON
+let categories = []; 
+let allChannelsList = []; // Lista e sheshuar e kanaleve
+let epgData = {}; // Të dhënat e EPG-së të analizuara
+let hls = null;
+
+// --- DOM refs dhe State ---
+const catWrap = document.getElementById('categories');
+const grid = document.getElementById('grid');
+const playerContainer = document.getElementById('playerContainer');
+let currentCategory = 'LIVE TV'; 
+let currentFocusedElement = null; 
+let focusedArea = 'cats'; 
+let catFocus = 0;
+let gridFocus = 0;
+let isMenuVisible = false;
+let menuFocusIndex = 0;
+let currentChannelIndex = 0; 
+let infoBarTimer = null; 
+let digitBuffer = ''; 
+let digitTimer = null; 
+
+
+// --- FILLESA DHE MIGRIMI I TË DHËNAVE ---
+async function initializeApp() {
+    try {
+        await fetchChannelData();
+        await fetchEPGData();
+
+        // 3. Ruajtja e Kategorisë dhe Kanalit të Fundit
+        currentCategory = localStorage.getItem('lastCategory') || categories[0] || 'LIVE TV';
+        const lastChannelIndex = parseInt(localStorage.getItem('lastChannelIndex'));
+        
+        if (!isNaN(lastChannelIndex) && lastChannelIndex < allChannelsList.length) {
+            currentChannelIndex = lastChannelIndex;
+            // Zbulimi i kategorise per kanalin e fundit te shikuar
+            const lastChannel = allChannelsList[currentChannelIndex];
+            currentCategory = lastChannel.category;
+            // Gjej pozicionin e fokusit te kanalit ne gridin e kategorise
+            const categoryChannels = allChannelsData[currentCategory];
+            gridFocus = categoryChannels.findIndex(ch => ch.fullIndex === currentChannelIndex);
+        } else {
+             currentChannelIndex = 0;
+             gridFocus = 0;
+        }
+
+        renderCategories();
+        loadCategory(currentCategory);
+        
+    } catch (error) {
+        console.error("Gabim në inicializimin e aplikacionit:", error);
+        alert("Gabim gjatë ngarkimit të të dhënave të aplikacionit. Kontrolloni skedarin channels.json.");
+    }
+}
+
+async function fetchChannelData() {
+    const response = await fetch(CHANNELS_JSON_URL);
+    if (!response.ok) {
+        throw new Error("Nuk u gjet skedari channels.json");
+    }
+    allChannelsData = await response.json();
+    categories = Object.keys(allChannelsData);
+    
+    // Krijo listën e sheshuar (Flat List) dhe shtoj Indexing
+    let counter = 0;
+    allChannelsList = [];
+    categories.forEach(categoryName => {
+        const list = allChannelsData[categoryName] || [];
+        list.forEach(channel => {
+            channel.fullIndex = counter;
+            channel.number = counter + 1;
+            channel.category = categoryName; 
+            allChannelsList.push(channel);
+            counter++;
+        });
+    });
+}
+
+async function fetchEPGData() {
+    try {
+        const response = await fetch(EPG_URL);
+        if (!response.ok) {
+            throw new Error(`Gabim HTTP: ${response.status} gjatë marrjes së EPG-së`);
+        }
+        const xmlText = await response.text();
+        const parser = new xml2js.Parser();
+        const result = await parser.parseStringPromise(xmlText);
+        
+        epgData = {};
+        if (result.tv && result.tv.programme) {
+            result.tv.programme.forEach(p => {
+                const channelId = p.$.channel;
+                if (!epgData[channelId]) {
+                    epgData[channelId] = [];
+                }
+                const startTime = new Date(p.$.start);
+                const stopTime = new Date(p.$.stop);
+                const title = p.title && p.title[0] ? p.title[0]._ : 'Pa Titull';
+                
+                epgData[channelId].push({ startTime, stopTime, title });
+            });
+        }
+        console.log("EPG u ngarkua me sukses.");
+    } catch (error) {
+        console.error("Gabim në ngarkimin/analizimin e EPG-së:", error);
+        // EPG Data mund te mbetet bosh, aplikacioni do te funksionojë pa të
+    }
+}
+
+function getEPGNow(channelId) {
+    const now = new Date();
+    const programs = epgData[channelId] || [];
+    
+    const currentProgram = programs.find(p => p.startTime <= now && p.stopTime > now);
+    
+    if (currentProgram) {
+        const start = currentProgram.startTime.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+        const stop = currentProgram.stopTime.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+        return {
+            name: currentProgram.title,
+            time: `${start} - ${stop}`
+        };
+    }
+    return { name: "Nuk ka Program TV (EPG)", time: "" };
+}
+
+// --- RENDERIMI I UI ---
+function renderCategories(){
+    catWrap.innerHTML = '';
+    categories.forEach((cat,ci)=>{
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn';
+        btn.textContent = cat;
+        btn.setAttribute('data-cat',cat);
+        btn.tabIndex = 0;
+        btn.onclick = ()=> loadCategory(cat);
+        btn.onfocus = ()=> { focusedArea = 'cats'; catFocus = ci; } 
+        catWrap.appendChild(btn);
+    });
+}
+
+function loadCategory(cat){
+    currentCategory = cat;
+    localStorage.setItem('lastCategory', cat); // Ruaj Kategorinë e Zgjedhur
+    grid.innerHTML = '';
+    
+    const list = allChannelsData[cat] || [];
+    list.forEach((ch,idx)=>{
+        // Kontenjeri i kanalit (përfshin kutinë dhe EPG-në)
+        const wrap = document.createElement('div');
+        wrap.className = 'channel-wrap';
+        
+        const box = document.createElement('button');
+        box.className = 'channel';
+        box.tabIndex = 0;
+        box.setAttribute('data-idx', idx);
+        
+        const logo = document.createElement('img');
+        logo.src = ch.logo;
+        logo.alt = ch.name;
+        box.appendChild(logo);
+        
+        // Elementi i EPG-së
+        const epgInfo = document.createElement('div');
+        epgInfo.className = 'epg-info';
+        
+        box.onfocus = ()=> { 
+            focusedArea = 'grid'; 
+            gridFocus = idx;
+            // Shfaq EPG-në kur fokusohet
+            const epg = getEPGNow(ch.channelId);
+            epgInfo.innerHTML = `<div class="program-name">${epg.name}</div><div class="program-time">${epg.time}</div>`;
+        } 
+        
+        box.onclick = ()=> openPlayerForChannel(ch);
+        
+        wrap.appendChild(box);
+        wrap.appendChild(epgInfo);
+        grid.appendChild(wrap);
+    });
+    
+    catFocus = categories.indexOf(cat) >= 0 ? categories.indexOf(cat) : 0;
+    
+    // Ruaj fokusin e kanalit vetëm nëse është në kategorinë e fundit të ruajtur
+    const lastCategorySaved = localStorage.getItem('lastCategory');
+    if (cat !== lastCategorySaved) {
+        gridFocus = 0; // Përndryshe fillo nga kanali i parë
+    }
+    
+    focusedArea = 'cats';
+    focusCurrent();
+} 
+
+function focusCurrent(){
+    if (currentFocusedElement) {
+        currentFocusedElement.classList.remove('focused');
+        // Sigurohuni që EPG-ja e vjetër të fshihet
+        const epgInfoOld = currentFocusedElement.parentElement.querySelector('.epg-info');
+        if (epgInfoOld) {
+             epgInfoOld.innerHTML = '';
+        }
+    }
+
+    let targetElement = null;
+    
+    if(focusedArea === 'cats'){
+        const cats = catWrap.querySelectorAll('.cat-btn');
+        if (cats[catFocus]) {
+            targetElement = cats[catFocus];
+        }
+    } else {
+        // Fokusimi te elementi .channel brenda .channel-wrap
+        const wraps = grid.querySelectorAll('.channel-wrap');
+        if (wraps[gridFocus]) {
+            targetElement = wraps[gridFocus].querySelector('.channel');
+            // Shfaq EPG-në e kanalit të ri të fokusuar
+            const focusedChannel = allChannelsList.find(ch => ch.category === currentCategory && ch.fullIndex === targetElement.parentElement.channelData.fullIndex);
+            if (focusedChannel) {
+                const epg = getEPGNow(focusedChannel.channelId);
+                const epgInfoNew = targetElement.parentElement.querySelector('.epg-info');
+                epgInfoNew.innerHTML = `<div class="program-name">${epg.name}</div><div class="program-time">${epg.time}</div>`;
+            }
+        }
+    }
+    
+    if (targetElement) {
+        targetElement.classList.add('focused');
+        targetElement.focus(); 
+        currentFocusedElement = targetElement;
+    }
+} 
+
+// ... (Widget Logic, Player Logic - Mbeten siç ishin, me ndryshime per EPG) ...
+function showInfoBar(ch) {
+    const infoBar = document.getElementById('infoBar');
+    const title = infoBar.querySelector('.channel-title');
+    const epgDisplay = infoBar.querySelector('.epg-now-playing');
+
+    if (!infoBar || !title) return; 
+    
+    const epg = getEPGNow(ch.channelId);
+
+    title.textContent = `${ch.number || currentChannelIndex + 1} | ${ch.name}`;
+    epgDisplay.textContent = epg.time ? `${epg.time} - ${epg.name}` : epg.name;
+
+    infoBar.classList.add('visible'); 
+    
+    if (infoBarTimer) clearTimeout(infoBarTimer); 
+
+    infoBarTimer = setTimeout(() => {
+        infoBar.classList.remove('visible');
+    }, 5000);
+} 
+
+function switchChannel(ch){
+    if(!ch.url) return;
+    
+    if (ch.fullIndex === currentChannelIndex && isMenuVisible) {
+        toggleChannelMenu(); 
+        return; 
+    }
+    
+    if (isMenuVisible) {
+        toggleChannelMenu(); 
+    }
+    
+    currentChannelIndex = ch.fullIndex; 
+    menuFocusIndex = ch.fullIndex; 
+    localStorage.setItem('lastChannelIndex', currentChannelIndex); // Ruaj Kanalin e Fundit
+
+    openPlayerForChannel(ch, true);
+}
+
+
+function openPlayerForChannel(ch, isSwitching = false){
+    // ... (Logjika e player-it mbetet e njëjtë)
+    const url = ch.url;
+    if(!url) {
+        if (!isSwitching) {
+            alert(`Kanali "${ch.name}" nuk ka një URL aktive.`);
+        } else {
+            updateLoadingState('error', ch.name);
+        }
+        return;
+    }
+    
+    updateLoadingState('loading');
+    showInfoBar(ch); 
+
+    if (ch.fullIndex !== undefined) {
+        currentChannelIndex = ch.fullIndex;
+        menuFocusIndex = ch.fullIndex;
+        localStorage.setItem('lastChannelIndex', currentChannelIndex); // Ruaj Kanalin e Fundit
+    } else {
+        const foundIndex = allChannelsList.findIndex(channel => channel.url === url);
+        if (foundIndex !== -1) {
+            currentChannelIndex = foundIndex;
+            menuFocusIndex = foundIndex;
+            localStorage.setItem('lastChannelIndex', currentChannelIndex); // Ruaj Kanalin e Fundit
+        }
+    }
+
+    // ... (pjesa e ngritjes së playerit dhe inicializimit të menusë anësore mbetet e njëjtë) ...
+
+    if (!isSwitching) {
+        document.body.style.padding = '0';
+        document.body.style.overflow = 'hidden';
+        document.getElementById('mainContent').style.display = 'none'; 
+        history.pushState({player:true}, 'player');
+        playerContainer.style.display = 'flex';
+    }
+    
+    // ... (HLS/Video Player Logic) ...
+    // Krijimi i elementit te videos dhe menusë, si në kodin origjinal...
+    let video = document.getElementById('tvplayer');
+    let channelMenu = document.getElementById('channelMenu');
+    
+    if (!video) {
+        video = document.createElement('video');
+        video.id = 'tvplayer';
+        video.autoplay = true;
+        video.controls = false; 
+        video.muted = false;
+        video.setAttribute('playsinline','');
+        // Kujdes: Sigurohu qe video te shtohet para infoBar per z-index
+        playerContainer.insertBefore(video, document.getElementById('infoBar')); 
+
+        channelMenu = document.createElement('div');
+        channelMenu.id = 'channelMenu';
+        playerContainer.appendChild(channelMenu);
+        
+        updateOrientationClass(); 
+    }
+    
+    // POPULLO DHE FSHEH MENYNE ANESORE (e njejte)
+    if (!channelMenu) channelMenu = document.getElementById('channelMenu');
+    channelMenu.innerHTML = '';
+    allChannelsList.forEach((channelData, index) => {
+        const item = document.createElement('div');
+        item.className = 'menu-channel-item';
+        // ... (popullimi i item)
+        const channelNumber = document.createElement('span');
+        channelNumber.className = 'menu-channel-number';
+        channelNumber.textContent = channelData.number;
+        
+        const channelName = document.createElement('span');
+        channelName.textContent = channelData.name;
+        
+        item.appendChild(channelNumber);
+        item.appendChild(channelName);
+        
+        item.setAttribute('data-url', channelData.url);
+        item.setAttribute('data-index', index);
+        item.tabIndex = 0; 
+        
+        if (index === currentChannelIndex) {
+            item.classList.add('focused');
+        }
+        
+        item.onclick = () => switchChannel(channelData); 
+        channelMenu.appendChild(item);
+    });
+    isMenuVisible = false;
+    channelMenu.classList.remove('active'); 
+    channelMenu.style.display = 'none';
+
+    // Luaj me hls.js (e njejte)
+    if(Hls && Hls.isSupported()){
+        hls = new Hls({ maxBufferLength: 10 }); 
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function(){ 
+            video.play().catch(()=>{}); 
+        });
+        
+        hls.on(Hls.Events.ERROR, function(event, data){
+            if (data.fatal) {
+                updateLoadingState('error', ch.name);
+                console.error('HLS Fatal Error:', data.details);
+            }
+        });
+    } else {
+        video.src = url;
+        video.play().catch(()=>{});
+    } 
+
+    video.onplaying = () => {
+        updateLoadingState('hidden');
+    };
+    video.onerror = () => {
+        updateLoadingState('error', ch.name);
+    } 
+
+    try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){} 
+    const req = video.requestFullscreen || video.webkitRequestFullscreen || video.msRequestFullscreen;
+    try{ req && req.call(video).catch(()=>{}); }catch(e){}
+} 
+// ... (closePlayer dhe logjika e keydown mbeten siç ishin) ...
+
+// Rikonfirmo Logjikën e Navigimit (Për shkak të channel-wrap)
+document.addEventListener('keydown', (e)=>{
+    
+    // ... (Logjika brenda player-it mbetet e njëjtë) ...
+    if(playerContainer.style.display === 'flex'){
+        // Logjika e playerit...
+        // ... (mbetet e njëjtë, përfshirë ndërrimin me numra dhe ndërrimin sekuncial) ...
+        
+        const channelMenu = document.getElementById('channelMenu');
+        const menuItems = channelMenu ? channelMenu.querySelectorAll('.menu-channel-item') : [];
+        const MAX_CHANNEL_INDEX = allChannelsList.length - 1; 
+
+        // Logjika e numrave
+        if (e.key >= '0' && e.key <= '9') {
+            e.preventDefault();
+            
+            if (digitTimer) clearTimeout(digitTimer);
+            
+            if (digitBuffer.length < 3) {
+                digitBuffer += e.key;
+            } else {
+                digitBuffer = e.key;
+            }
+            
+            const infoBar = document.getElementById('infoBar');
+            const title = infoBar.querySelector('.channel-title');
+
+            title.textContent = `Kanali: ${digitBuffer}`;
+            infoBar.classList.add('visible'); 
+
+            if (infoBarTimer) clearTimeout(infoBarTimer);
+            
+            digitTimer = setTimeout(() => {
+                let targetNumber = parseInt(digitBuffer);
+                
+                if (targetNumber > 0 && targetNumber <= allChannelsList.length) {
+                    const targetChannel = allChannelsList[targetNumber - 1];
+                    switchChannel(targetChannel); 
+                }
+                
+                digitBuffer = '';
+                
+                if (allChannelsList[currentChannelIndex]) {
+                    showInfoBar(allChannelsList[currentChannelIndex]); 
+                } else {
+                    infoBar.classList.remove('visible');
+                }
+            }, 1000); 
+            
+            return; 
+        }
+        
+        // KONTROLLA E MENYSE
+        if(isMenuVisible){
+            if(e.key === 'ArrowUp'){
+                menuItems[menuFocusIndex]?.classList.remove('focused');
+                menuFocusIndex = Math.max(0, menuFocusIndex - 1);
+                menuItems[menuFocusIndex]?.classList.add('focused');
+                centerMenuFocus(menuItems, menuFocusIndex); 
+            } else if(e.key === 'ArrowDown'){
+                menuItems[menuFocusIndex]?.classList.remove('focused');
+                menuFocusIndex = Math.min(MAX_CHANNEL_INDEX, menuFocusIndex + 1);
+                menuItems[menuFocusIndex]?.classList.add('focused');
+                centerMenuFocus(menuItems, menuFocusIndex); 
+            } else if(e.key === 'Enter'){
+                const channel = allChannelsList[menuFocusIndex];
+                switchChannel(channel);
+            }
+            return; 
+        } 
+
+        // NDERRIMI SEKUENCIAL ME UP/DOWN
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            
+            if (digitTimer) clearTimeout(digitTimer);
+            digitBuffer = '';
+            
+            let newIndex = currentChannelIndex;
+            
+            if (e.key === 'ArrowUp') {
+                newIndex = currentChannelIndex > 0 ? currentChannelIndex - 1 : MAX_CHANNEL_INDEX;
+            } else if (e.key === 'ArrowDown') {
+                newIndex = currentChannelIndex < MAX_CHANNEL_INDEX ? currentChannelIndex + 1 : 0;
+            }
+            
+            const nextChannel = allChannelsList[newIndex];
+            currentChannelIndex = newIndex; 
+            openPlayerForChannel(nextChannel, true); 
+            return;
+        }
+
+
+        // OK/ENTER: HAP MENUNE E KANALIT dhe shfaq Info Bar
+        if(e.key === 'Enter'){
+            if (digitBuffer.length > 0) {
+                let targetNumber = parseInt(digitBuffer);
+                if (targetNumber > 0 && targetNumber <= allChannelsList.length) {
+                    const targetChannel = allChannelsList[targetNumber - 1];
+                    switchChannel(targetChannel); 
+                }
+                if (digitTimer) clearTimeout(digitTimer);
+                digitBuffer = '';
+            } else {
+                const currentChannel = allChannelsList[currentChannelIndex];
+                showInfoBar(currentChannel);
+                toggleChannelMenu();
+            }
+        } 
+
+        // BACKSPACE/ESCAPE: Mbyll player-in
+        if(e.key === 'Backspace' || e.key === 'Escape'){ 
+            if (digitTimer) clearTimeout(digitTimer); 
+            digitBuffer = '';
+            closePlayer(); 
+            history.back(); 
+        }
+        
+        return; 
+    }
+    
+    // KONTROLLAT E NAVIGIMIT TE UI-SE (jashte player-it)
+    if(e.key === 'ArrowRight'){
+        if(focusedArea === 'cats') { catFocus = Math.min(catFocus + 1, categories.length - 1); }
+        else { 
+            const gridItems = grid.querySelectorAll('.channel-wrap');
+            if (gridFocus < gridItems.length - 1) {
+                gridFocus = gridFocus + 1;
+            } else {
+                // Opsional: Implementoni navigimin Wraparound këtu
+            }
+        }
+    }
+    if(e.key === 'ArrowLeft'){
+        if(focusedArea === 'cats') { catFocus = Math.max(catFocus - 1, 0); }
+        else { gridFocus = Math.max(gridFocus - 1, 0); }
+    }
+    if(e.key === 'ArrowDown'){
+        if(focusedArea === 'cats'){
+            focusedArea = 'grid';
+            // Përditëso gridFocus bazuar në pozicionin e kategorisë 
+            gridFocus = Math.min(catFocus, grid.querySelectorAll('.channel-wrap').length - 1); 
+        } else {
+            const currentItems = grid.querySelectorAll('.channel-wrap');
+            const newIndex = gridFocus + GRID_COLS;
+            if (newIndex < currentItems.length) {
+                gridFocus = newIndex;
+            }
+        }
+    }
+    if(e.key === 'ArrowUp'){
+        if(focusedArea === 'grid'){
+            if(gridFocus < GRID_COLS){ 
+                focusedArea = 'cats';
+                // Përditëso catFocus bazuar në pozicionin e kolonës
+                catFocus = Math.min(gridFocus, categories.length - 1);
+            } else {
+                gridFocus = gridFocus - GRID_COLS;
+            }
+        }
+    } 
+
+    const gridItems = grid.querySelectorAll('.channel-wrap');
+    if(gridFocus >= gridItems.length) gridFocus = gridItems.length - 1;
+    if(gridFocus < 0) gridFocus = 0; 
+    
+    if(e.key === 'Enter'){
+        if(focusedArea === 'cats'){
+            loadCategory(categories[catFocus]);
+        } else {
+            grid.querySelectorAll('.channel-wrap')[gridFocus]?.querySelector('.channel').click();
+        }
+    }
+    
+    // BACKSPACE/ESCAPE: KTHEHU NË FAQEN KRYESORE NGA GRIDI
+    if(e.key === 'Escape' || e.key === 'Backspace'){
+        e.preventDefault();
+        if(playerContainer.style.display !== 'flex') return;
+    }
+
+
+    focusCurrent();
+}); 
+
+// initial load
+// Zëvendëson loadCategory me initializeApp
+document.addEventListener('DOMContentLoaded', ()=>{
+    initializeApp();
+    updateClock(); 
+    loadSuharekeWeather(); 
+    setInterval(updateClock, 60000); 
+    setInterval(loadSuharekeWeather, 600000); 
+});
+
+// ... (Pjesët e tjera të logjikës së Orës/Motit, Player-it dhe History mbeten siç ishin) ...
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const dateString = now.toLocaleDateString('sq-AL', { weekday: 'long', day: 'numeric', month: 'long' });
+    
+    document.getElementById('currentTime').textContent = timeString;
+    document.getElementById('currentDate').textContent = dateString;
+} 
+
+async function fetchWeather(lat, lon, cityName) {
+    const weatherSummary = document.getElementById('weatherSummary');
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`; 
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Gabim HTTP: ${response.status}`);
+        }
+        const data = await response.json(); 
+
+        const currentTemp = Math.round(data.current.temperature_2m);
+        const currentCode = data.current.weather_code;
+        const currentWeatherDesc = getWeatherDescription(currentCode);
+        
+        weatherSummary.innerHTML = `${currentWeatherDesc.emoji} ${currentTemp}°C`; 
+        
+    } catch (error) {
+        console.error("Gabim në marrjen e motit:", error);
+        weatherSummary.innerHTML = `? --°C`;
+    }
+} 
+
+function getWeatherDescription(code) {
+    if (code === 0) return { description: "Diell i pastër", emoji: "??" };
+    if (code === 1) return { description: "Kryesisht diell", emoji: "???" };
+    if (code === 2) return { description: "Pjesërisht i vranët", emoji: "?" };
+    if (code === 3) return { description: "Moti i vranët", emoji: "??" };
+    if (code === 45 || code === 48) return { description: "Mjegull", emoji: "???" };
+    if (code >= 51 && code <= 55) return { description: "Shi i lehtë", emoji: "???" };
+    if (code >= 61 && code <= 65) return { description: "Shi i fortë", emoji: "?" };
+    if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86) || code === 66 || code === 67) {
+        return { description: "Borë", emoji: "??" };
+    }
+    if (code >= 80 && code <= 82) return { description: "Stuhi me shi", emoji: "??" };
+    if (code >= 95 && code <= 99) return { description: "Stuhi", emoji: "?" };
+    return { description: "Moti i Panjohur", emoji: "?" }; 
+} 
+
+function loadSuharekeWeather() {
+    const suharekeLat = 42.36; 
+    const suharekeLon = 20.84; 
+    fetchWeather(suharekeLat, suharekeLon);
+}
+
+function centerMenuFocus(menuItems, index) {
+    const channelMenu = document.getElementById('channelMenu');
+    const focusedItem = menuItems[index]; 
+
+    if (!focusedItem || !channelMenu) return; 
+
+    const itemHeight = focusedItem.offsetHeight; 
+    const menuHeight = channelMenu.clientHeight; 
+    const targetScrollTop = focusedItem.offsetTop - (menuHeight / 2) + (itemHeight / 2); 
+
+    channelMenu.scrollTo({ 
+        top: targetScrollTop, 
+        behavior: 'auto' 
+    });
+} 
+
+function toggleChannelMenu(){
+    const channelMenu = document.getElementById('channelMenu');
+    if (!channelMenu) return; 
+
+    isMenuVisible = !isMenuVisible;
+    
+    if(isMenuVisible) {
+        channelMenu.classList.add('active'); 
+        channelMenu.style.display = 'block';
+    } else {
+        channelMenu.classList.remove('active');
+        // Vonesë e vogël për animacionin e transformimit
+        setTimeout(() => {
+            channelMenu.style.display = 'none';
+        }, 300); 
+    }
+    
+    if (isMenuVisible) {
+        const items = channelMenu.querySelectorAll('.menu-channel-item');
+        if(items.length > 0) {
+            items.forEach(i => i.classList.remove('focused')); 
+            menuFocusIndex = Math.min(Math.max(0, currentChannelIndex), items.length - 1); 
+            items[menuFocusIndex].classList.add('focused');
+            centerMenuFocus(items, menuFocusIndex); 
+        }
+    }
+} 
+
+function updateLoadingState(state, channelName = null) {
+    const overlay = document.getElementById('loadingOverlay');
+    const spinner = overlay.querySelector('.spinner');
+    const message = overlay.querySelector('.message'); 
+
+    if (!overlay) return; 
+
+    if (state === 'loading') {
+        spinner.style.display = 'block';
+        message.classList.remove('error-text');
+        message.textContent = 'Po ngarkohet...';
+        overlay.style.display = 'flex';
+    } else if (state === 'error') {
+        spinner.style.display = 'none';
+        message.classList.add('error-text');
+        message.textContent = `Kanali nuk punon: ${channelName || 'Pritet lidhja'}`;
+        overlay.style.display = 'flex';
+    } else if (state === 'hidden') {
+        overlay.style.display = 'none';
+    }
+} 
+
+function closePlayer(){
+    document.body.style.padding = '40px';
+    document.body.style.overflow = 'auto'; 
+    document.getElementById('mainContent').style.display = 'flex'; 
+    isMenuVisible = false; 
+    
+    if(hls){ try{ hls.destroy(); }catch(e){} hls = null; }
+    const video = document.getElementById('tvplayer');
+    if (video) video.remove(); 
+    
+    const menu = document.getElementById('channelMenu');
+    if (menu) {
+        menu.classList.remove('active'); 
+        setTimeout(() => {
+            menu.style.display = 'none';
+        }, 300);
+    }
+
+    updateLoadingState('hidden'); 
+    if (infoBarTimer) {
+        clearTimeout(infoBarTimer); 
+        document.getElementById('infoBar').classList.remove('visible');
+    }
+    if (digitTimer) clearTimeout(digitTimer); 
+    digitBuffer = '';
+    
+    playerContainer.style.display = 'none';
+    
+    try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+    
+    focusCurrent();
+} 
+
+function updateOrientationClass(){
+    const w = window.innerWidth, h = window.innerHeight;
+    if(w>h) { playerContainer.classList.add('video-landscape'); playerContainer.classList.remove('video-portrait'); }
+    else { playerContainer.classList.add('video-portrait'); playerContainer.classList.remove('video-landscape'); }
+}
+window.addEventListener('resize', updateOrientationClass);
+window.addEventListener('orientationchange', updateOrientationClass); 
+
+window.addEventListener('popstate', (e)=>{
+    if(playerContainer.style.display === 'flex'){
+        closePlayer();
+    }
+}); 
+
+window.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' || e.key === 'Backspace'){
+        if(playerContainer.style.display === 'flex' && !isMenuVisible){
+            if(window.history.state && window.history.state.player){
+                 // historia mbyllet ne closePlayer()
+            } else {
+                closePlayer();
+            }
+        }
+    }
+}); 
+</script>
+</body>
+</html>

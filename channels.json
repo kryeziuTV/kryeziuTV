@@ -1,0 +1,27 @@
+{
+    "LIVE TV": [
+        { "name":"RTK 1", "logo":"https://vimg.ipko.tv/logo/color/rtk1.png", "url":"http://gjvideo-live-xk.gjirafa.net/gjvideo-livestream/98r-d35-487-v6m/tracks-v4a1/mono.ts.m3u8", "channelId": "RTK.1.al" },
+        { "name":"RTV 21", "logo":"https://vimg.ipko.tv/logo/color/rtv21.png", "url":"http://gjirafa-video-live.gjirafa.net/gjvideo-live/2cz-npl-jfn-9he/tracks-v2a1/mono.m3u8", "channelId": "RTV.21.al" },
+        { "name":"KTV", "logo":"https://vimg.ipko.tv/logo/color/ktv.png", "url":"http://gjirafa-video-live.gjirafa.net/gjvideo-livestream/lj9-pxm-o53-rp0/tracks-v4a1/mono.m3u8", "channelId": "KTV.al" },
+        { "name":"DUKAGJINI TV", "logo":"https://vimg.ipko.tv/logo/color/tvdukagjini.png", "url":"http://amdcam.tibo.tv:8081/yWbXvr1S/dukagjini_720p/playlist.m3u8", "channelId": "Dukagjini.al" },
+        { "name":"KLAN TV", "logo":"https://vimg.ipko.tv/logo/color/klanalbania.png", "url":"http://188.172.107.157:15152/live/klanhdott/playlist.m3u8", "channelId": "Klan.Tv.al" },
+        { "name":"VIZION PLUS", "logo":"https://vimg.ipko.tv/logo/color/vizionplus.png", "url":"http://95.107.132.40:85/m3u8/vizion.m3u8", "channelId": "Vizion.Plus.al" },
+        { "name":"EURONEWS ALBANIA", "logo":"https://vimg.ipko.tv/logo/color/euronewsalbania.png", "url":"http://gjirafa-video-live.gjirafa.net/gjvideo-live/2dw-zuf-1c9-pxu/index.m3u8", "channelId": "Euronews.Albania.al" },
+        { "name":"A2 CNN", "logo":"https://vimg.ipko.tv/logo/color/a2cnn.png", "url":"http://gjirafa-video-live.gjirafa.net/gjvideo-live/2h7-5bc-xym-0k2/tracks-v2a1/mono.ts.m3u8", "channelId": "A2.CNN.al" },
+        { "name":"BB VIP KS 2", "logo":"https://upload.wikimedia.org/wikipedia/commons/e/e7/Big_Brother_VIP_Kosova_logo.png", "url":"http://51.15.10.229/bigBrotherAlb2/index.m3u8", "channelId": "BBVipKS2.al" },
+        { "name":"RTSH 1", "logo":"https://vimg.ipko.tv/logo/color/rtsh1.png", "url":"http://188.172.107.157:15152/live/rtsh1ott/playlist.m3u8", "channelId": "RTSH.1.al" }
+    ],
+    "FILMA": [ 
+        { "name":"FILM AKSION", "logo":"https://vimg.ipko.tv/logo/color/aksion.png", "url":"http://195.181.169.152:8080/Film_Aksion_AL/video.m3u8?token=test", "channelId": "Film.Aksion.al" },
+        { "name":"FILM HITS", "logo":"https://vimg.ipko.tv/logo/color/hits.png", "url":"http://195.181.169.152:8080/Film_Hits_AL/video.m3u8?token=test", "channelId": "Film.Hits.HD.al" },
+        { "name":"FILM THRILLER", "logo":"https://vimg.ipko.tv/logo/color/thriller.png", "url":"http://195.181.169.152:8080/Film_Thriller_AL/video.m3u8?token=test", "channelId": "Film.Thriller.al" }
+    ],
+    "SPORT": [ 
+        { "name":"RTSH SPORT", "logo":"https://i.imgur.com/HDmLovC.png", "url":"http://188.172.107.157:15152/live/rtshsport/playlist.m3u8", "channelId": "RTSH.SPORT.al" },
+        { "name":"FSHF TV", "logo":"https://i.imgur.com/ul0aKfn.png", "url":"http://188.172.107.157:15152/live/fshfott/playlist.m3u8", "channelId": "FSHF.TV.al" }
+    ],
+    "FEMIJE": [ 
+        { "name":"RTSH FEMIJE", "logo":"https://i.imgur.com/tRHgtsk.png", "url":"http://188.172.107.157:15152/live/rtshfemijeott/playlist.m3u8", "channelId": "RTSH.FEMIJE.al" },
+        { "name":"DISNEY JUNIOR", "logo":"https://via.placeholder.com/120x120?text=K1", "url":"https://fl1.moveonjoy.com/DISNEY_JR/index.m3u8", "channelId": "Disney.Junior.al" }
+    ]
+}
