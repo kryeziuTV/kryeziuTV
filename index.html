@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8" />
-<title>TV App UI - Versioni 16:9 (6 Kanale, Pa EPG) - V26</title>
+<title>TV App UI - Versioni 16:9 (6 Kanale, Pa EPG) - V27</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
@@ -143,7 +143,7 @@
 
     /* Rregullimi i Gridit - 6 Kanale Horizontalisht */
     .grid { 
-        grid-template-columns: repeat(6, 160px); /* KRYESOR: Zëvendësuar 8 me 6 */
+        grid-template-columns: repeat(6, 160px); 
         gap: 25px 20px; 
         display:grid; 
         justify-content: center; 
@@ -197,9 +197,6 @@
         transform: none; 
     }
     
-    /* Hequr: Stilimi i EPG-së (epg-info) */
-
-
     /* --- PLAYER CONTAINER --- */
     #playerContainer { 
         position:fixed; 
@@ -251,7 +248,6 @@
         color: #fff;
         line-height: 1;
     } 
-    /* EPG info u hoq plotësisht nga HTML */
 
 
     /* Loading/Error Overlay */
@@ -362,7 +358,7 @@
             <div class="spinner"></div>
             <div class="message">Po ngarkohet...</div>
         </div> 
-        <video id="tvplayer" autoplay playsinline muted></video>
+        <video id="tvplayer" autoplay playsinline></video>
         <div id="infoBar">
             <div class="channel-title"></div>
         </div> 
@@ -373,7 +369,7 @@
 <script>
 // --- KONFIGURIMI I APLIKACIONIT ---
 const CHANNELS_JSON_URL = "channels.json"; 
-const GRID_COLS = 6; /* KRYESOR: Ndryshuar nga 8 në 6 */
+const GRID_COLS = 6; 
 
 // --- Variablat globale ---
 let allChannelsData = {}; 
@@ -503,8 +499,6 @@ function loadCategory(cat){
         logo.alt = ch.name;
         box.appendChild(logo);
         
-        // Hequr: Elementi vizual i EPG-së nga kanalet
-        
         box.onfocus = ()=> { 
             focusedArea = 'grid'; 
             gridFocus = idx;
@@ -563,7 +557,7 @@ function showInfoBar(ch) {
 
     if (!infoBar || !title) return; 
     
-    // KRYESOR: Shfaq vetëm emrin dhe numrin e kanalit
+    // Shfaq vetëm emrin dhe numrin e kanalit
     title.textContent = `${ch.number || currentChannelIndex + 1} | ${ch.name}`;
 
     infoBar.classList.add('visible'); 
@@ -667,7 +661,7 @@ function openPlayerForChannel(ch, isSwitching = false){
     }
 
 
-    // Luaj me hls.js (e njejte)
+    // Luaj me hls.js
     if(hls){ try{ hls.destroy(); }catch(e){} hls = null; }
     
     if(Hls && Hls.isSupported()){
@@ -691,6 +685,9 @@ function openPlayerForChannel(ch, isSwitching = false){
     video.onplaying = () => { updateLoadingState('hidden'); };
     video.onerror = () => { updateLoadingState('error', ch.name); } 
 
+    // **SHTUAR:** Sigurohu që zëri është në maksimum pas hapjes
+    video.volume = 1; 
+    
     try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){} 
     const req = video.requestFullscreen || video.webkitRequestFullscreen || video.msRequestFullscreen;
     try{ req && req.call(video).catch(()=>{}); }catch(e){}
@@ -720,7 +717,7 @@ document.addEventListener('keydown', (e)=>{
             const infoBar = document.getElementById('infoBar');
             const title = infoBar.querySelector('.channel-title');
 
-            // KRYESOR: Shfaq vetëm numrin e shkruar
+            // Shfaq vetëm numrin e shkruar
             title.textContent = `Kanali: ${digitBuffer}`;
             infoBar.classList.add('visible'); 
 
